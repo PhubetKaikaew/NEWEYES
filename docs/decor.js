@@ -1,4 +1,4 @@
-// NEW EYES — ของตกแต่ง: ภาพตัดแปะที่วาดด้วยโค้ด + ผีเสื้อ (Monarch / Blue Morpho / Swallowtail) บินตอนเปิดหน้าเว็บ
+// NEW EYES — ของตกแต่ง: อักษรเบรลล์ที่ค่อย ๆ เขียน + แถบขอบฟ้า + ผีเสื้อ (Monarch / Blue Morpho / Swallowtail) บินตอนเปิดหน้าเว็บ
 // ไม่มีผลกับการทำงานของตัวอ่าน และปิดการเคลื่อนไหวเองถ้าผู้ใช้ตั้งค่าลดการเคลื่อนไหว
 (function () {
     const root = document.documentElement;
@@ -43,40 +43,6 @@
 
     // ---------- ภาพตัดแปะ ----------
     const painters = {
-        // ดวงตากระดาษตัดแปะ + จุดอักษรเบรลล์ = "ดวงตาคู่ใหม่"
-        eye() {
-            const w = 1600, h = 800, c = canvasOf(w, h), x = c.getContext("2d"), r = rng(11);
-            x.fillStyle = cv("--cut-1"); x.fillRect(0, 0, w, h);
-            torn(x, [[-20, 90], [520, 40], [560, 220], [-20, 300]], r, 14, cv("--cut-2"));
-            torn(x, [[980, 560], [1640, 470], [1640, 860], [940, 860]], r, 14, cv("--cut-4"));
-            torn(x, [[1180, -20], [1460, -20], [1380, 330], [1150, 260]], r, 12, cv("--cut-5"));
-
-            // จุดเบรลล์นูนด้านขวา
-            for (let gx = 0; gx < 9; gx++) {
-                for (let gy = 0; gy < 3; gy++) {
-                    for (let dx = 0; dx < 2; dx++) {
-                        if (r() < 0.45) continue;
-                        const px = 1080 + gx * 52 + dx * 18, py = 330 + gy * 20 + Math.floor(gx / 3) * 0;
-                        x.fillStyle = "rgba(243,238,230,.85)";
-                        x.beginPath(); x.arc(px, py, 6, 0, Math.PI * 2); x.fill();
-                    }
-                }
-            }
-
-            // ตา: เปลือกตา (ทรงอัลมอนด์) -> ม่านตา -> รูม่านตา -> แสงสะท้อน
-            const cx = 640, cy = 430, ew = 760, eh = 230, pts = [];
-            for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([cx - ew / 2 + ew * t, cy - Math.sin(Math.PI * t) * eh]); }
-            for (let i = 40; i >= 0; i--) { const t = i / 40; pts.push([cx - ew / 2 + ew * t, cy + Math.sin(Math.PI * t) * eh * 0.8]); }
-            x.save(); x.translate(12, 16); torn(x, pts, r, 10, "rgba(0,0,0,.35)"); x.restore(); // เงากระดาษ
-            torn(x, pts, r, 10, cv("--cream"));
-            torn(x, circle(cx, cy, 165), r, 9, cv("--cut-5"));
-            torn(x, circle(cx, cy, 118), r, 8, cv("--cut-3"));
-            torn(x, circle(cx, cy, 68), r, 6, cv("--cut-4"));
-            torn(x, circle(cx - 34, cy - 40, 24, 24), r, 4, cv("--cream"));
-
-            grainPixels(x, w, h, 34);
-            return c.toDataURL("image/jpeg", 0.85);
-        },
         horizon() {
             const w = 1400, h = 800, c = canvasOf(w, h), x = c.getContext("2d");
             const g = x.createLinearGradient(0, 0, 0, h);
@@ -91,6 +57,134 @@
         const p = painters[el.dataset.paint];
         if (p) el.style.backgroundImage = `url(${p()})`;
     });
+
+    // ---------- อักษรเบรลล์ที่ค่อย ๆ ถูกเขียน (พื้นหลัง hero) ----------
+    // เบรลล์ภาษาอังกฤษแบบไม่ย่อคำ (Grade 1): จุด 1-2-3 คอลัมน์ซ้ายบนลงล่าง, 4-5-6 คอลัมน์ขวา
+    const BRAILLE = {
+        a: "1", b: "12", c: "14", d: "145", e: "15", f: "124", g: "1245", h: "125", i: "24", j: "245",
+        k: "13", l: "123", m: "134", n: "1345", o: "135", p: "1234", q: "12345", r: "1235", s: "234", t: "2345",
+        u: "136", v: "1236", w: "2456", x: "1346", y: "13456", z: "1356", ".": "256", ",": "2", " ": "",
+    };
+    const DOT_POS = { 1: [0, 0], 2: [0, 1], 3: [0, 2], 4: [1, 0], 5: [1, 1], 6: [1, 2] };
+    const PHRASES = [
+        "new eyes", "read the world aloud", "every page has a voice", "point the camera and listen",
+        "words you can hear", "for everyone who reads by touch",
+    ];
+
+    function brailleWriter() {
+        const cv = document.getElementById("brailleCanvas");
+        if (!cv) return;
+        const ctx = cv.getContext("2d");
+        const caption = document.getElementById("brailleText");
+        let W, H, dpr, d, lines, cells, idx, last, raf = null, visible = true, phrase = 0, waitUntil = 0;
+
+        const CELL_MS = 115;   // เวลาต่อช่อง (ค่อย ๆ เขียน)
+        const DOT_MS = 22;     // จุดในช่องเดียวกันนูนขึ้นไล่กัน
+        const POP_MS = 220;    // เวลาที่จุดหนึ่งนูนขึ้นจนเต็ม
+
+        function layout() {
+            dpr = Math.min(2, devicePixelRatio || 1);
+            const r = cv.getBoundingClientRect();
+            W = r.width; H = r.height;
+            cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            d = W < 600 ? 11 : 15;                       // ระยะห่างจุด (สัดส่วนเบรลล์จริง: จุด 2.5 มม. ช่อง 6 มม. บรรทัด 10 มม.)
+            const cellW = d * 2.4, lineH = d * 4, mx = d * 2, my = d * 2;
+            const cols = Math.max(4, Math.floor((W - mx * 2) / cellW));
+            const rows = Math.max(2, Math.floor((H - my * 2) / lineH));
+            // ตัดคำตามความกว้าง แล้วเติมให้เต็มหน้า
+            lines = [];
+            let p = phrase, line = "";
+            while (lines.length < rows) {
+                for (const word of PHRASES[p % PHRASES.length].split(" ")) {
+                    const add = line ? line + " " + word : word;
+                    if (add.length > cols) { lines.push(line); line = word; if (lines.length >= rows) break; }
+                    else line = add;
+                }
+                if (lines.length >= rows) break;
+                line += line && line.length < cols - 2 ? "  " : "";
+                p++;
+            }
+            cells = [];
+            lines.forEach((ln, r) => [...ln].forEach((ch, c) => {
+                if (BRAILLE[ch]) cells.push({ x: mx + c * cellW, y: my + r * lineH, dots: [...BRAILLE[ch]].map(Number) });
+            }));
+            if (caption) caption.textContent = lines[0].trim();
+        }
+
+        // จุดนูนบนกระดาษสีเข้ม: แสงจากมุมซ้ายบน
+        function dot(x, y, k) {
+            const r = d * 0.4 * (0.6 + 0.4 * k);
+            ctx.globalAlpha = k;
+            const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.15);
+            g.addColorStop(0, "rgba(255,248,236,.95)");
+            g.addColorStop(0.5, "rgba(243,238,230,.42)");
+            g.addColorStop(1, "rgba(243,238,230,0)");
+            ctx.fillStyle = "rgba(0,0,0,.6)";
+            ctx.beginPath(); ctx.arc(x + r * 0.28, y + r * 0.32, r * 1.02, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(x, y, r * 1.15, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        function drawCell(c, age) {
+            ctx.clearRect(c.x - d * 0.7, c.y - d * 0.7, d * 2.4, d * 3.4);
+            c.dots.forEach((n, i) => {
+                const t = (age - i * DOT_MS) / POP_MS;
+                if (t <= 0) return;
+                const [cx, cy] = DOT_POS[n];
+                dot(c.x + cx * d, c.y + cy * d, Math.min(1, t));
+            });
+        }
+
+        function restart() {
+            ctx.clearRect(0, 0, W, H);
+            layout();
+            idx = 0;
+            last = performance.now();
+        }
+
+        function frame(now) {
+            raf = null;
+            if (!visible || document.hidden) return;
+            if (waitUntil) {
+                if (now < waitUntil) { raf = requestAnimationFrame(frame); return; }
+                waitUntil = 0;
+                phrase++;
+                restart();
+                cv.classList.remove("fading");
+            }
+            const elapsed = now - last;
+            const target = Math.min(cells.length, Math.floor(elapsed / CELL_MS) + 1);
+            // วาดช่องที่ยังนูนขึ้นไม่เสร็จ (ช่องอื่นวาดไปแล้ว ไม่ต้องวาดซ้ำ)
+            for (let i = Math.max(0, idx - 4); i < target; i++) drawCell(cells[i], elapsed - i * CELL_MS);
+            idx = target;
+            if (idx >= cells.length && elapsed - cells.length * CELL_MS > POP_MS + 200) {
+                // เขียนเต็มหน้าแล้ว: ค้างไว้ให้ดูสักพัก แล้วจางหาย เริ่มหน้าใหม่
+                setTimeout(() => cv.classList.add("fading"), 3000);
+                waitUntil = now + 3000 + 1800;
+            }
+            raf = requestAnimationFrame(frame);
+        }
+        const resume = () => { if (!raf && visible && !document.hidden) { last = performance.now() - idx * CELL_MS; raf = requestAnimationFrame(frame); } };
+
+        layout();
+        if (reduceMotion) { // ไม่เคลื่อนไหว: แสดงทั้งหน้าที่เขียนเสร็จแล้ว
+            cells.forEach((c) => drawCell(c, 1e9));
+            return;
+        }
+        idx = 0; last = performance.now();
+        raf = requestAnimationFrame(frame);
+        // ประหยัดแบตเตอรี่: หยุดเมื่อเลื่อนพ้น hero หรือสลับแท็บ (ตอนใช้กล้องจะได้ไม่หน่วง)
+        new IntersectionObserver(([e]) => { visible = e.isIntersecting; resume(); }).observe(cv);
+        document.addEventListener("visibilitychange", resume);
+        let rt;
+        addEventListener("resize", () => {
+            clearTimeout(rt);
+            rt = setTimeout(() => { const w = cv.getBoundingClientRect().width; if (Math.abs(w - W) > 40) restart(); }, 300);
+        });
+    }
+    brailleWriter();
 
     // ---------- ผีเสื้อ ----------
     // ปีกครึ่งซ้าย (viewBox 0 0 60 110, ลำตัวอยู่ที่ x=60) — ปีกขวาใช้รูปเดียวกันกลับด้าน

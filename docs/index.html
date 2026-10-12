@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%23141413'/%3E%3Cpath d='M8,60 C30,25 90,25 112,60 C90,95 30,95 8,60 Z' fill='none' stroke='%23F3EEE6' stroke-width='7'/%3E%3Ccircle cx='60' cy='60' r='25' fill='%23F3EEE6'/%3E%3Ccircle cx='53' cy='47' r='5' fill='%23141413'/%3E%3Ccircle cx='67' cy='60' r='5' fill='%23141413'/%3E%3C/svg%3E">
     <link href="style.css" rel="stylesheet">
 </head>
 <body>
@@ -18,10 +19,19 @@
     <div id="flight" class="flight" aria-hidden="true"></div>
 
     <header class="hero" id="top">
-        <div class="art grain" style="background-image:url('images/braille-7326486_1920.jpg')" role="img"
-             aria-label="ภาพระยะใกล้ของจุดอักษรเบรลล์บนกระดาษ"></div>
+        <div class="art grain braille-art" role="img" aria-label="อักษรเบรลล์ที่ค่อย ๆ ถูกเขียนนูนขึ้นทีละจุด">
+            <canvas id="brailleCanvas" aria-hidden="true"></canvas>
+        </div>
         <div class="hero-inner">
-            <div class="logo-wrap"><img class="logo" src="images/Lo.jpg" alt="โลโก้ NEW EYES"></div>
+            <div class="logo-wrap">
+                <svg class="logo" viewBox="0 0 120 120" role="img" aria-label="โลโก้ New Eyes: ดวงตาที่มีม่านตาเป็นอักษรเบรลล์">
+                    <path d="M8,60 C30,25 90,25 112,60 C90,95 30,95 8,60 Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+                    <circle cx="60" cy="60" r="25" fill="currentColor"/>
+                    <!-- ช่องเบรลล์ 6 จุด: จุด 1 และ 5 = ตัว e (eyes) -->
+                    <g fill="#141413"><circle cx="53" cy="47" r="4.6"/><circle cx="67" cy="60" r="4.6"/></g>
+                    <g fill="none" stroke="#141413" stroke-width="1.4" opacity=".45"><circle cx="53" cy="60" r="3.8"/><circle cx="53" cy="73" r="3.8"/><circle cx="67" cy="47" r="3.8"/><circle cx="67" cy="73" r="3.8"/></g>
+                </svg>
+            </div>
             <p class="hero-kicker">อ่านออกเสียงจากกล้อง</p>
             <h1 class="hero-title"><span class="th">ดวงตาคู่ใหม่</span><span class="latin">New Eyes</span></h1>
             <ol class="toc">
@@ -30,6 +40,7 @@
                 <li><a href="#about"><span class="n">(3)</span><span class="dots"></span><span class="t">ผู้จัดทำ</span></a></li>
             </ol>
         </div>
+        <p class="braille-caption" aria-hidden="true">พื้นหลังเป็นอักษรเบรลล์ภาษาอังกฤษ บรรทัดแรกเขียนว่า “<span id="brailleText">new eyes</span>”</p>
     </header>
 
     <div class="sheet">
@@ -85,11 +96,6 @@
                 <div id="status" class="status" role="status" aria-live="polite">กำลังเตรียมตัวอ่าน…</div>
                 <div id="result" class="result" aria-live="off"></div>
             </section>
-
-            <figure class="cutout bleed">
-                <div class="art grain torn-both" data-paint="eye" role="img"
-                     aria-label="ภาพตัดแปะกระดาษรูปดวงตา ล้อมด้วยจุดอักษรเบรลล์"></div>
-            </figure>
 
             <section class="layer" id="tips">
                 <h2>ถ่ายอย่างไรให้อ่านแม่น</h2>

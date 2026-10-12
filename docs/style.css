@@ -73,22 +73,27 @@ p { margin: 0 0 1.15rem; }
     position: relative; min-height: min(88svh, 52rem); display: flex;
     color: var(--cream); background: var(--night); isolation: isolate;
 }
-.hero .art { position: absolute; inset: 0; z-index: -1; filter: saturate(.6) contrast(1.05); }
+.hero .art { position: absolute; inset: 0; z-index: -1; }
+/* พื้นหลังอักษรเบรลล์ที่ค่อย ๆ ถูกเขียน */
+.braille-art { background: radial-gradient(ellipse at 50% 45%, #24221e, #161513 75%); overflow: hidden; }
+.braille-art canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity 1.6s ease; }
+.braille-art canvas.fading { opacity: 0; }
+.braille-caption {
+    position: absolute; right: 1.25rem; bottom: 1.5rem; z-index: 2; margin: 0; max-width: calc(100% - 2.5rem);
+    font-family: var(--font-ui); font-size: .78rem; line-height: 1.5; text-align: right; color: rgba(243,238,230,.5);
+}
 .hero .art::before {
     content: ""; position: absolute; inset: 0; z-index: 1;
     background:
-        radial-gradient(ellipse at 50% 42%, rgba(20,20,19,.35), rgba(20,20,19,.82) 75%),
-        linear-gradient(to bottom, rgba(20,20,19,.2) 55%, var(--night));
+        radial-gradient(ellipse at 50% 46%, rgba(20,20,19,.55), rgba(20,20,19,.25) 70%),
+        linear-gradient(to bottom, rgba(20,20,19,0) 60%, var(--night));
 }
 .hero-inner {
     margin: auto; width: 100%; max-width: 34rem;
     padding: 4.5rem 1.5rem 5.5rem; text-align: center; position: relative; z-index: 2;
 }
-.logo-wrap { position: relative; width: 5.5rem; margin: 0 auto 1.75rem; }
-.logo {
-    display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 50%;
-    box-shadow: 0 0 0 3px rgba(243,238,230,.85), 0 10px 30px rgba(0,0,0,.45);
-}
+.logo-wrap { position: relative; width: 7rem; margin: 0 auto 1.25rem; }
+.logo { display: block; width: 100%; height: auto; color: var(--cream); filter: drop-shadow(0 6px 18px rgba(0,0,0,.5)); overflow: visible; }
 .hero-kicker { font-family: var(--font-ui); font-size: .95rem; margin: 0 0 1rem; opacity: .85; }
 .hero-title { position: relative; font-family: var(--font-head); font-weight: 400; margin: 0 0 3rem; line-height: 1.1; text-shadow: 0 2px 30px rgba(0,0,0,.4); }
 .hero-title span { display: block; }
@@ -135,8 +140,8 @@ p { margin: 0 0 1.15rem; }
     align-items: center; justify-content: center; padding: 1.5rem; text-align: center;
     color: var(--cream); font-family: var(--font-ui); font-size: 1.1rem; line-height: 1.6;
     background:
-        radial-gradient(ellipse at 50% 40%, rgba(20,20,19,.25), rgba(20,20,19,.85) 80%),
-        url("images/braille-7326486_1920.jpg") center / cover;
+        radial-gradient(circle at 30% 30%, rgba(243,238,230,.10) 0 2px, transparent 2.5px) 0 0 / 22px 22px,
+        radial-gradient(ellipse at 50% 40%, #2a2824, var(--night) 80%);
 }
 .placeholder b { font-weight: 600; }
 .placeholder-sub { font-size: .95rem; opacity: .75; }
@@ -191,10 +196,6 @@ p { margin: 0 0 1.15rem; }
 }
 .result:empty::before { content: "ข้อความที่อ่านได้จะขึ้นตรงนี้"; color: var(--muted); }
 
-/* ---------- ภาพตัดแปะคั่น ---------- */
-.cutout { margin: 2rem 0; }
-.cutout.bleed { width: 100vw; margin-left: calc(50% - 50vw); }
-.cutout.bleed .art { aspect-ratio: 16 / 8; max-height: 30rem; width: 100%; }
 
 /* ---------- วิธีใช้ / ผู้จัดทำ ---------- */
 .tips { margin: 0; padding: 0; list-style: none; counter-reset: tip; }
@@ -255,7 +256,7 @@ p { margin: 0 0 1.15rem; }
 @media (max-width: 600px) {
     body { font-size: 1.05rem; }
     .hero-inner { padding: 3.5rem 1.25rem 4.5rem; }
-    .logo-wrap { width: 4.5rem; }
+    .logo-wrap { width: 5.5rem; }
     .controls { grid-template-columns: 1fr 1fr; gap: .6rem; }
     .btn { font-size: 1rem; min-height: 3.5rem; padding: .6rem .7rem; }
     .btn-wide { grid-column: 1 / -1; }
