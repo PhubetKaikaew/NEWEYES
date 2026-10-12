@@ -1,319 +1,259 @@
-* {
-    box-sizing: border-box;
+/* NEW EYES — Editorial collage theme
+   โลกภาพถ่าย (hero, ภาพตัดแปะ, footer) = มืด มีเกรน ขอบกระดาษฉีก
+   โลกกระดาษ (เนื้อหา + ตัวอ่าน) = พื้นกระดาษ ตัวหนังสือมีเชิง */
+
+html {
+    --night: #141413;
+    --cream: #F3EEE6;
+    --torn-top: polygon(0.00% 4.9px, 1.67% 2.6px, 3.33% 3.6px, 5.00% 0.9px, 6.67% 1.1px, 8.33% 0.2px, 10.00% 0.0px, 11.67% 0.0px, 13.33% 0.0px, 15.00% 0.0px, 16.67% 0.0px, 18.33% 0.0px, 20.00% 0.0px, 21.67% 2.1px, 23.33% 0.0px, 25.00% 0.0px, 26.67% 0.8px, 28.33% 3.7px, 30.00% 4.2px, 31.67% 3.5px, 33.33% 6.6px, 35.00% 3.7px, 36.67% 6.0px, 38.33% 4.6px, 40.00% 2.3px, 41.67% 0.0px, 43.33% 0.0px, 45.00% 2.0px, 46.67% 0.0px, 48.33% 0.5px, 50.00% 1.4px, 51.67% 0.6px, 53.33% 0.9px, 55.00% 0.0px, 56.67% 0.0px, 58.33% 0.0px, 60.00% 1.2px, 61.67% 0.7px, 63.33% 0.0px, 65.00% 0.5px, 66.67% 0.2px, 68.33% 0.0px, 70.00% 1.9px, 71.67% 3.2px, 73.33% 1.5px, 75.00% 2.0px, 76.67% 2.2px, 78.33% 4.6px, 80.00% 6.0px, 81.67% 4.7px, 83.33% 7.7px, 85.00% 5.3px, 86.67% 4.8px, 88.33% 6.4px, 90.00% 4.2px, 91.67% 4.1px, 93.33% 1.2px, 95.00% 2.2px, 96.67% 3.9px, 98.33% 4.4px, 100.00% 6.8px, 100% 100%, 0% 100%);
+    --torn-both: polygon(0.00% 4.7px, 1.67% 5.1px, 3.33% 7.8px, 5.00% 7.6px, 6.67% 7.6px, 8.33% 8.2px, 10.00% 6.2px, 11.67% 6.2px, 13.33% 7.1px, 15.00% 8.9px, 16.67% 6.3px, 18.33% 5.1px, 20.00% 2.5px, 21.67% 4.5px, 23.33% 5.7px, 25.00% 2.8px, 26.67% 5.8px, 28.33% 8.8px, 30.00% 9.8px, 31.67% 10.0px, 33.33% 7.8px, 35.00% 4.7px, 36.67% 4.9px, 38.33% 2.1px, 40.00% 0.1px, 41.67% 0.0px, 43.33% 0.0px, 45.00% 0.0px, 46.67% 0.0px, 48.33% 2.2px, 50.00% 2.3px, 51.67% 3.2px, 53.33% 3.2px, 55.00% 4.3px, 56.67% 4.0px, 58.33% 2.6px, 60.00% 5.7px, 61.67% 8.9px, 63.33% 10.0px, 65.00% 10.0px, 66.67% 8.8px, 68.33% 7.1px, 70.00% 5.7px, 71.67% 3.0px, 73.33% 4.7px, 75.00% 4.1px, 76.67% 6.3px, 78.33% 5.5px, 80.00% 8.5px, 81.67% 10.0px, 83.33% 6.8px, 85.00% 4.9px, 86.67% 7.6px, 88.33% 7.4px, 90.00% 10.0px, 91.67% 9.3px, 93.33% 6.6px, 95.00% 7.4px, 96.67% 9.2px, 98.33% 7.7px, 100.00% 5.1px, 100.00% calc(100% - 3.9px), 98.33% calc(100% - 6.9px), 96.67% calc(100% - 8.6px), 95.00% calc(100% - 6.1px), 93.33% calc(100% - 4.5px), 91.67% calc(100% - 1.9px), 90.00% calc(100% - 0.0px), 88.33% calc(100% - 1.9px), 86.67% calc(100% - 0.0px), 85.00% calc(100% - 0.4px), 83.33% calc(100% - 0.0px), 81.67% calc(100% - 0.0px), 80.00% calc(100% - 1.5px), 78.33% calc(100% - 0.0px), 76.67% calc(100% - 0.9px), 75.00% calc(100% - 0.0px), 73.33% calc(100% - 0.0px), 71.67% calc(100% - 0.0px), 70.00% calc(100% - 0.0px), 68.33% calc(100% - 3.0px), 66.67% calc(100% - 5.0px), 65.00% calc(100% - 3.7px), 63.33% calc(100% - 6.2px), 61.67% calc(100% - 4.3px), 60.00% calc(100% - 3.6px), 58.33% calc(100% - 5.9px), 56.67% calc(100% - 6.8px), 55.00% calc(100% - 4.3px), 53.33% calc(100% - 7.4px), 51.67% calc(100% - 5.6px), 50.00% calc(100% - 4.0px), 48.33% calc(100% - 5.7px), 46.67% calc(100% - 4.7px), 45.00% calc(100% - 3.4px), 43.33% calc(100% - 0.6px), 41.67% calc(100% - 0.0px), 40.00% calc(100% - 0.5px), 38.33% calc(100% - 0.0px), 36.67% calc(100% - 0.6px), 35.00% calc(100% - 0.0px), 33.33% calc(100% - 0.0px), 31.67% calc(100% - 2.9px), 30.00% calc(100% - 2.8px), 28.33% calc(100% - 3.3px), 26.67% calc(100% - 5.7px), 25.00% calc(100% - 3.6px), 23.33% calc(100% - 1.4px), 21.67% calc(100% - 4.0px), 20.00% calc(100% - 6.1px), 18.33% calc(100% - 4.5px), 16.67% calc(100% - 2.5px), 15.00% calc(100% - 4.0px), 13.33% calc(100% - 6.8px), 11.67% calc(100% - 4.9px), 10.00% calc(100% - 7.8px), 8.33% calc(100% - 10.0px), 6.67% calc(100% - 10.0px), 5.00% calc(100% - 9.5px), 3.33% calc(100% - 7.0px), 1.67% calc(100% - 4.0px), 0.00% calc(100% - 7.0px));
+    --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+
+    --bg: #F8F7F4; --surface: #FFFFFF; --ink: #161614; --muted: #6A665E;
+    --rule: #E3DFD6; --accent: #C4603F; --accent-2: #3F6E8C; --accent-soft: #F2E3DA; --accent-ink: #FFFFFF;
+    --cut-1: #2C4F9E; --cut-2: #B3322B; --cut-3: #2F8452; --cut-4: #1A1614; --cut-5: #E2A33B;
+    --font-head: "Source Serif 4", "Noto Serif Thai", Georgia, serif;
+    --font-body: "Source Serif 4", "Noto Serif Thai", Georgia, serif;
+    --font-ui: "IBM Plex Sans Thai", system-ui, sans-serif;
+    --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) {
+        --bg: #1B1A18; --surface: #24221F; --ink: #EDE8DF; --muted: #A59E91;
+        --rule: #37332D; --accent: #E0896A; --accent-2: #8DB6D1; --accent-soft: #3A2A22; --accent-ink: #1B1A18;
+    }
+}
+html[data-theme="dark"] {
+    --bg: #1B1A18; --surface: #24221F; --ink: #EDE8DF; --muted: #A59E91;
+    --rule: #37332D; --accent: #E0896A; --accent-2: #8DB6D1; --accent-soft: #3A2A22; --accent-ink: #1B1A18;
 }
 
-[hidden] {
-    display: none !important;
-}
-
+/* ---------- พื้นฐาน ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; overflow-x: clip; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body {
     margin: 0;
-    font-family: "IBM Plex Sans Thai", Tahoma, sans-serif;
-    color: #000;
-    background-color: #e9e4da;
-    background-image: url("images/braille-7326486_1920.jpg");
-    background-size: cover;
-    background-attachment: fixed;
-    min-height: 100vh;
+    background: var(--night);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+}
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+p { margin: 0 0 1.15rem; }
+
+.skip {
+    position: absolute; left: 1rem; top: -4rem; z-index: 50;
+    padding: .6rem 1rem; border-radius: var(--radius);
+    background: var(--cream); color: var(--night); font-family: var(--font-ui);
+}
+.skip:focus { top: 1rem; }
+
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
 }
 
-main,
-footer {
-    background-color: white;
-    border: 3px solid black;
-    border-radius: 48px;
-    max-width: 960px;
-    margin: 64px auto 0;
-    padding: 16px 32px 32px;
+/* ---------- ชุดตัดแปะ ---------- */
+.art { background-color: var(--night); background-size: cover; background-position: center; position: relative; }
+.grain::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: var(--grain); background-size: 180px 180px; mix-blend-mode: overlay; opacity: .35;
 }
+.torn-top { clip-path: var(--torn-top); }
+.torn-both { clip-path: var(--torn-both); }
 
-footer {
-    max-width: 760px;
-    margin: 48px auto 64px;
-    padding: 8px 24px 24px;
+/* ---------- Hero ---------- */
+.hero {
+    position: relative; min-height: min(88svh, 52rem); display: flex;
+    color: var(--cream); background: var(--night); isolation: isolate;
 }
-
-.tum {
-    display: flex;
-    justify-content: center;
+.hero .art { position: absolute; inset: 0; z-index: -1; filter: saturate(.6) contrast(1.05); }
+.hero .art::before {
+    content: ""; position: absolute; inset: 0; z-index: 1;
+    background:
+        radial-gradient(ellipse at 50% 42%, rgba(20,20,19,.35), rgba(20,20,19,.82) 75%),
+        linear-gradient(to bottom, rgba(20,20,19,.2) 55%, var(--night));
 }
-
+.hero-inner {
+    margin: auto; width: 100%; max-width: 34rem;
+    padding: 4.5rem 1.5rem 5.5rem; text-align: center; position: relative; z-index: 2;
+}
+.logo-wrap { position: relative; width: 5.5rem; margin: 0 auto 1.75rem; }
 .logo {
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    margin: 16px 0 0;
+    display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(243,238,230,.85), 0 10px 30px rgba(0,0,0,.45);
+}
+.hero-kicker { font-family: var(--font-ui); font-size: .95rem; margin: 0 0 1rem; opacity: .85; }
+.hero-title { position: relative; font-family: var(--font-head); font-weight: 400; margin: 0 0 3rem; line-height: 1.1; text-shadow: 0 2px 30px rgba(0,0,0,.4); }
+.hero-title span { display: block; }
+.hero-title .th { font-size: clamp(2.2rem, 9vw, 3.6rem); line-height: 1.45; }
+.hero-title .latin { font-family: "Source Serif 4", Georgia, serif; font-size: clamp(3.6rem, 17vw, 7rem); letter-spacing: -0.02em; }
+.toc { list-style: none; margin: 0 auto; padding: 0; text-align: left; font-family: var(--font-head); font-size: 1.1rem; }
+.toc a { display: flex; align-items: baseline; color: var(--cream); text-decoration: none; padding: .45rem 0; }
+.toc a:hover .t, .toc a:focus-visible .t { text-decoration: underline; text-underline-offset: .25em; }
+.toc .n { font-family: "Source Serif 4", Georgia, serif; opacity: .75; letter-spacing: .08em; }
+.toc .dots { flex: 1; border-bottom: 1.5px dotted rgba(243,238,230,.45); margin: 0 .8rem; transform: translateY(-.3em); min-width: 1.5rem; }
+.toc .t { white-space: nowrap; }
+
+/* กระดาษฉีกขึ้นไปทับ hero */
+.sheet { position: relative; background: var(--bg); }
+.sheet::before {
+    content: ""; position: absolute; left: 0; right: 0; top: -16px; height: 18px;
+    background: var(--bg); clip-path: var(--torn-top);
 }
 
-h1 {
-    text-align: center;
-    font-size: 50px;
-    margin: 12px 0 8px;
+/* ---------- คอลัมน์เนื้อหา ---------- */
+.page { max-width: 44rem; margin: 0 auto; padding: 3rem 1.25rem 1rem; counter-reset: stage; }
+.lede { font-family: var(--font-head); font-size: clamp(1.35rem, 4.6vw, 1.8rem); line-height: 1.65; margin: 0 0 1rem; }
+.layer { padding: 2.25rem 0; counter-increment: stage; scroll-margin-top: 1rem; }
+.layer h2 {
+    font-family: var(--font-head); font-weight: 400;
+    font-size: clamp(1.7rem, 5vw, 2.2rem); line-height: 1.35; margin: 0 0 1.25rem;
 }
-
-.content p {
-    font-size: 21px;
-    line-height: 1.6;
-    margin: 0 0 24px;
-    text-align: center;
+.layer h2::before {
+    content: "(" counter(stage) ")"; display: block;
+    font-size: .95rem; color: var(--muted); letter-spacing: .08em; margin-bottom: .2rem;
 }
+.stop-note { font-family: var(--font-ui); font-size: .95rem; color: var(--muted); border-left: 3px solid var(--accent); padding: .1rem 0 .1rem .9rem; }
 
 /* ---------- ตัวอ่าน ---------- */
 .viewer {
-    position: relative;
-    width: 100%;
-    max-width: 640px;
-    aspect-ratio: 4 / 3;
-    margin: 0 auto 20px;
-    border: 3px solid black;
-    border-radius: 32px;
-    overflow: hidden;
-    background: #111;
+    position: relative; width: 100%; max-width: 44rem; aspect-ratio: 4 / 3; margin: 0 auto 1.5rem;
+    background: var(--night); border-radius: 4px; overflow: hidden;
+    clip-path: var(--torn-both);
+    box-shadow: 0 18px 40px -18px rgba(0,0,0,.45);
 }
-
-.viewer video,
-.viewer img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
+.viewer video, .viewer img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.placeholder {
+    position: absolute; inset: 0; display: flex; flex-direction: column; gap: .35rem;
+    align-items: center; justify-content: center; padding: 1.5rem; text-align: center;
+    color: var(--cream); font-family: var(--font-ui); font-size: 1.1rem; line-height: 1.6;
+    background:
+        radial-gradient(ellipse at 50% 40%, rgba(20,20,19,.25), rgba(20,20,19,.85) 80%),
+        url("images/braille-7326486_1920.jpg") center / cover;
 }
+.placeholder b { font-weight: 600; }
+.placeholder-sub { font-size: .95rem; opacity: .75; }
 
 /* กรอบนำสายตา = ส่วนที่ OCR อ่านจริง (ตรงกับ NEPrep.ROI) */
 .guide {
-    position: absolute;
-    left: 10%;
-    top: 20%;
-    width: 80%;
-    height: 60%;
-    border: 4px dashed rgba(255, 255, 255, 0.9);
-    border-radius: 16px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
-    transition: border-color 0.2s;
-    pointer-events: none;
+    position: absolute; left: 10%; top: 20%; width: 80%; height: 60%;
+    border: 3px dashed rgba(243,238,230,.9); border-radius: 6px;
+    box-shadow: 0 0 0 9999px rgba(20,20,19,.4);
+    transition: border-color .2s; pointer-events: none;
 }
+.guide.steady { border-style: solid; border-color: #6BE38A; }
 
-.guide.steady {
-    border-style: solid;
-    border-color: #4cff7a;
-}
-
-.warn {
-    margin: 12px 0 0;
-    padding: 10px 14px;
-    border: 2px solid #b00020;
-    border-radius: 12px;
-    color: #b00020;
-    font-size: 17px;
-    line-height: 1.5;
-}
-
-.placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    text-align: center;
-    color: #fff;
-    font-size: 20px;
-    line-height: 1.6;
-}
-
-.controls {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-}
-
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .75rem; }
 .btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 64px;
-    padding: 12px 16px;
-    font: 600 20px "IBM Plex Sans Thai", Tahoma, sans-serif;
-    color: #000;
-    background: #fff;
-    border: 3px solid #000;
-    border-radius: 20px;
-    cursor: pointer;
-    text-align: center;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 3.75rem; padding: .7rem 1rem;
+    font: 500 1.1rem/1.4 var(--font-ui); color: var(--ink);
+    background: var(--surface); border: 1.5px solid var(--ink); border-radius: 999px;
+    cursor: pointer; transition: background .15s, color .15s;
 }
-
-.btn:hover:not(:disabled) {
-    background: #f1ede4;
-}
-
-.btn:focus-visible,
-select:focus-visible,
-#fileInput:focus-visible + .btn {
-    outline: 4px solid #1a5cff;
-    outline-offset: 3px;
-}
-
-.btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
+.btn:hover:not(:disabled) { background: var(--accent-soft); }
+#fileInput:focus-visible + .btn { outline: 3px solid var(--accent); outline-offset: 3px; }
+.btn:disabled { opacity: .38; cursor: not-allowed; }
 .btn-main {
-    background: #000;
-    color: #fff;
+    grid-column: 1 / -1; min-height: 4.5rem; font-size: 1.35rem; font-weight: 600;
+    background: var(--ink); color: var(--bg); border-color: var(--ink);
 }
-
-.btn-main:hover:not(:disabled) {
-    background: #333;
-}
-
-.btn[aria-pressed="true"] {
-    background: #ffd84d;
-}
+.btn-main:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 
 .settings {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px 32px;
-    justify-content: center;
-    margin: 20px 0 8px;
-    font-size: 18px;
+    display: flex; flex-wrap: wrap; gap: .75rem 2rem; justify-content: center;
+    margin: 1.5rem 0 .5rem; font-family: var(--font-ui); font-size: 1rem; color: var(--muted);
 }
-
-.settings label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
+.settings label { display: flex; align-items: center; gap: .6rem; }
 .settings select {
-    font: inherit;
-    padding: 6px 10px;
-    border: 2px solid #000;
-    border-radius: 10px;
-    background: #fff;
+    font: inherit; color: var(--ink); padding: .4rem .7rem;
+    background: var(--surface); border: 1.5px solid var(--rule); border-radius: 8px;
 }
+.settings input[type="range"] { width: 9rem; accent-color: var(--accent); }
 
-.settings input[type="range"] {
-    width: 140px;
-    accent-color: #000;
+.warn {
+    margin: 1rem 0 0; padding: .75rem 1rem; font-family: var(--font-ui); font-size: 1rem; line-height: 1.6;
+    color: var(--accent); background: var(--accent-soft); border-radius: var(--radius);
 }
-
-.status {
-    margin: 16px 0 8px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: 600;
-    min-height: 1.6em;
-}
-
+.status { margin: 1.25rem 0 .75rem; text-align: center; font-family: var(--font-ui); font-size: 1rem; font-weight: 500; color: var(--muted); min-height: 1.6em; }
 .result {
-    min-height: 120px;
-    padding: 16px 20px;
-    border: 2px dashed #000;
-    border-radius: 20px;
-    font-size: 24px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
+    min-height: 7rem; padding: 1.25rem 0 0; border-top: 2px solid var(--accent);
+    font-family: var(--font-head); font-size: 1.5rem; line-height: 1.75;
+    white-space: pre-wrap; word-break: break-word;
 }
+.result:empty::before { content: "ข้อความที่อ่านได้จะขึ้นตรงนี้"; color: var(--muted); }
 
-.result:empty::before {
-    content: "ข้อความที่อ่านได้จะขึ้นตรงนี้";
-    color: #777;
+/* ---------- ภาพตัดแปะคั่น ---------- */
+.cutout { margin: 2rem 0; }
+.cutout.bleed { width: 100vw; margin-left: calc(50% - 50vw); }
+.cutout.bleed .art { aspect-ratio: 16 / 8; max-height: 30rem; width: 100%; }
+
+/* ---------- วิธีใช้ / ผู้จัดทำ ---------- */
+.tips { margin: 0; padding: 0; list-style: none; counter-reset: tip; }
+.tips li { counter-increment: tip; position: relative; padding: 0 0 1.1rem 2.6rem; }
+.tips li::before {
+    content: counter(tip); position: absolute; left: 0; top: .2rem;
+    width: 1.8rem; height: 1.8rem; display: grid; place-items: center;
+    font: 600 .95rem/1 var(--font-ui); color: var(--accent-ink); background: var(--accent); border-radius: 50%;
 }
+.tips strong { font-weight: 600; }
+.credits { list-style: none; margin: 0; padding: 0; }
+.credits li { display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: baseline; padding: .7rem 0; border-bottom: 1px dotted var(--rule); }
+.credits .who { font-family: var(--font-head); font-size: 1.3rem; flex: 1 1 14rem; }
+.credits .mail { font-family: var(--font-ui); font-size: .95rem; color: var(--muted); }
 
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+/* ---------- แถบขอบฟ้า + footer ---------- */
+.band { position: relative; height: clamp(14rem, 48vw, 26rem); margin-top: 2rem; }
+.band .art { position: absolute; inset: 0; }
+.band .art::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(20,20,19,0) 35%, var(--night) 100%); }
+.site-foot { background: var(--night); color: var(--cream); font-family: var(--font-ui); padding: 1rem 1.5rem calc(4rem + env(safe-area-inset-bottom, 0px)); }
+.foot-inner { max-width: 44rem; margin: 0 auto; }
+.foot-title { font-family: "Source Serif 4", Georgia, serif; font-size: 2rem; margin: 0 0 1rem; }
+.foot-list { list-style: none; margin: 0 0 2rem; padding: 0; }
+.foot-list li { padding: .4rem 0; }
+.foot-list a { color: var(--cream); text-underline-offset: .25em; }
+.foot-note { font-size: .88rem; color: rgba(243,238,230,.55); margin: 0; }
+
+/* ---------- ผีเสื้อ ---------- */
+.flight { position: absolute; left: 0; top: 0; width: 100%; height: 100vh; pointer-events: none; z-index: 30; overflow: visible; }
+.bf { position: absolute; left: 0; top: 0; width: var(--size, 44px); height: var(--size, 44px); margin: calc(var(--size, 44px) / -2) 0 0 calc(var(--size, 44px) / -2); pointer-events: none; will-change: transform; }
+.bf svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 6px rgba(0,0,0,.35)); }
+.bf .wing { transform-box: view-box; transform-origin: 50% 50%; animation: flap var(--flap, .26s) ease-in-out infinite alternate; }
+@keyframes flap { from { transform: scaleX(1); } to { transform: scaleX(.18); } }
+/* ผีเสื้อที่เกาะแล้ว: กระพือช้า ๆ เป็นครั้งคราว */
+.bf.resting { position: absolute; margin: 0; z-index: 3; }
+.bf.resting .wing { animation: rest-flap 5s ease-in-out infinite; animation-delay: var(--rest-delay, 0s); }
+@keyframes rest-flap {
+    0%, 78%, 100% { transform: scaleX(1); }
+    84% { transform: scaleX(.35); }
+    90% { transform: scaleX(1); }
+    95% { transform: scaleX(.5); }
 }
-
-/* ---------- เครดิต ---------- */
-h4 {
-    text-align: center;
-    font-size: 36px;
-    margin: 16px 0 8px;
-}
-
-.ar {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.name,
-.email {
-    font-size: 22px;
-    width: 330px;
-    margin: 8px 12px;
+@media (prefers-reduced-motion: reduce) {
+    .bf .wing, .bf.resting .wing { animation: none; }
 }
 
 /* ---------- มือถือ ---------- */
 @media (max-width: 600px) {
-    main,
-    footer {
-        margin: 24px 16px 0;
-        padding: 8px 16px 20px;
-        border-radius: 28px;
-    }
-
-    footer {
-        margin: 24px 16px 32px;
-    }
-
-    .logo {
-        width: 110px;
-        height: 110px;
-    }
-
-    h1 {
-        font-size: 34px;
-    }
-
-    .content p {
-        font-size: 16px;
-    }
-
-    .viewer {
-        border-radius: 20px;
-    }
-
-    .controls {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .btn {
-        font-size: 17px;
-        min-height: 60px;
-        padding: 10px;
-    }
-
-    .btn-wide {
-        grid-column: 1 / -1;
-    }
-
-    .btn-main {
-        grid-column: 1 / -1;
-        min-height: 76px;
-        font-size: 22px;
-    }
-
-    .result {
-        font-size: 20px;
-    }
-
-    h4 {
-        font-size: 24px;
-    }
-
-    .name,
-    .email {
-        font-size: 16px;
-        width: auto;
-        margin: 4px 8px;
-    }
+    body { font-size: 1.05rem; }
+    .hero-inner { padding: 3.5rem 1.25rem 4.5rem; }
+    .logo-wrap { width: 4.5rem; }
+    .controls { grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .btn { font-size: 1rem; min-height: 3.5rem; padding: .6rem .7rem; }
+    .btn-wide { grid-column: 1 / -1; }
+    .btn-main { min-height: 4.75rem; font-size: 1.3rem; }
+    .result { font-size: 1.3rem; }
+    .credits .who { font-size: 1.15rem; }
 }
+
+/* ขอบกระดาษหยักเฉพาะตัวที่เกาะแล้ว (ตอนบินไม่ใส่ เพื่อไม่ให้มือถือหน่วง) */
+.bf.resting .paper { filter: url(#paper-edge); }
+.layer h2 { position: relative; }

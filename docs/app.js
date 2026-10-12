@@ -316,7 +316,7 @@ async function startCamera() {
         sharpHist = [];
         lastSteadyAt = Date.now();
         sampler = setInterval(sampleSharpness, SAMPLE_MS);
-        btnCamera.textContent = "📷 ปิดกล้อง";
+        btnCamera.textContent = "ปิดกล้อง";
         setStatus("เปิดกล้องแล้ว ให้ข้อความอยู่ในกรอบ ถือนิ่ง ๆ แล้วกดอ่านเลย");
     } catch (err) {
         console.error(err);
@@ -339,7 +339,7 @@ function stopCamera() {
     btnTorch.setAttribute("aria-pressed", "false");
     steady = false;
     video.srcObject = null;
-    btnCamera.textContent = "📷 เปิดกล้อง";
+    btnCamera.textContent = "เปิดกล้อง";
     if (photo.naturalWidth && !photo.hidden) fitViewer(photo.naturalWidth, photo.naturalHeight);
     showSource(photo.naturalWidth ? "photo" : "none");
 }
@@ -347,7 +347,7 @@ function stopCamera() {
 function setAuto(on) {
     autoOn = on;
     btnAuto.setAttribute("aria-pressed", String(on));
-    btnAuto.textContent = `🔁 อ่านอัตโนมัติ: ${on ? "เปิด" : "ปิด"}`;
+    btnAuto.textContent = `อ่านอัตโนมัติ: ${on ? "เปิด" : "ปิด"}`;
     if (on) {
         lastSpoken = "";
         lastSteadyAt = Date.now();
@@ -361,7 +361,7 @@ async function toggleTorch() {
         torchOn = !torchOn;
         await track.applyConstraints({ advanced: [{ torch: torchOn }] });
         btnTorch.setAttribute("aria-pressed", String(torchOn));
-        btnTorch.textContent = `🔦 ไฟฉาย: ${torchOn ? "เปิด" : "ปิด"}`;
+        btnTorch.textContent = `ไฟฉาย: ${torchOn ? "เปิด" : "ปิด"}`;
     } catch {
         torchOn = false;
         setStatus("เปิดไฟฉายไม่ได้ในเครื่องนี้");

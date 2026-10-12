@@ -2,85 +2,136 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#141413">
     <title>NEW EYES</title>
+    <meta name="description" content="หันกล้องมือถือไปที่ตัวหนังสือ แล้วฟังเสียงอ่านภาษาไทยและอังกฤษ สำหรับผู้พิการทางสายตา">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
 </head>
 <body>
-    <main>
-        <div class="tum">
-            <img class="logo" src="images/Lo.jpg" alt="โลโก้ NEW EYES">
-        </div>
-        <header>
-            <h1>NEW&nbsp;EYES</h1>
-        </header>
-        <div class="content">
-            <p>
-                เว็บไซต์นี้ช่วยผู้พิการทางสายตาอ่านหนังสือ เอกสาร และป้าย
-                ด้วยกล้องของมือถือหรือแท็บเล็ต เพียงหันกล้องไปที่ข้อความ
-                ระบบจะอ่านออกเสียงให้ฟัง รองรับภาษาไทยและภาษาอังกฤษ
-            </p>
-        </div>
+    <a class="skip" href="#reader">ข้ามไปที่ตัวอ่านข้อความ</a>
 
-        <section class="reader" aria-label="ตัวอ่านข้อความ">
-            <div id="viewer" class="viewer">
-                <video id="video" playsinline muted aria-hidden="true"></video>
-                <img id="photo" alt="" hidden>
-                <div id="guide" class="guide" aria-hidden="true" hidden></div>
-                <div id="placeholder" class="placeholder">
-                    กดปุ่ม <b>เปิดกล้อง</b> หรือ <b>ถ่ายรูป / เลือกรูป</b><br>
-                    ถือมือถือห่างจากกระดาษประมาณหนึ่งคืบ
+    <!-- ผีเสื้อกระดาษตัดแปะ (ตกแต่งอย่างเดียว ไม่มีผลกับโปรแกรมอ่านหน้าจอ) -->
+    <div id="flight" class="flight" aria-hidden="true"></div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <filter id="paper-edge" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/>
+        </filter>
+    </svg>
+
+    <header class="hero" id="top">
+        <div class="art grain" style="background-image:url('images/braille-7326486_1920.jpg')" role="img"
+             aria-label="ภาพระยะใกล้ของจุดอักษรเบรลล์บนกระดาษ"></div>
+        <div class="hero-inner">
+            <div class="logo-wrap"><img class="logo" src="images/Lo.jpg" alt="โลโก้ NEW EYES"></div>
+            <p class="hero-kicker">อ่านออกเสียงจากกล้อง</p>
+            <h1 class="hero-title"><span class="th">ดวงตาคู่ใหม่</span><span class="latin">New Eyes</span></h1>
+            <ol class="toc">
+                <li><a href="#reader"><span class="n">(1)</span><span class="dots"></span><span class="t">อ่านข้อความ</span></a></li>
+                <li><a href="#tips"><span class="n">(2)</span><span class="dots"></span><span class="t">ถ่ายอย่างไรให้อ่านแม่น</span></a></li>
+                <li><a href="#about"><span class="n">(3)</span><span class="dots"></span><span class="t">ผู้จัดทำ</span></a></li>
+            </ol>
+        </div>
+    </header>
+
+    <div class="sheet">
+        <main class="page">
+            <section class="intro">
+                <p class="lede">
+                    หันกล้องมือถือไปที่หนังสือ ฉลากยา หรือป้าย แล้วฟังเสียงอ่านให้
+                    รองรับภาษาไทยและภาษาอังกฤษ ทุกอย่างทำงานในเครื่องของคุณเอง
+                </p>
+            </section>
+
+            <section class="layer reader" id="reader" aria-labelledby="readerTitle">
+                <h2 id="readerTitle">อ่านข้อความ</h2>
+
+                <div id="viewer" class="viewer">
+                    <video id="video" playsinline muted aria-hidden="true"></video>
+                    <img id="photo" alt="" hidden>
+                    <div id="guide" class="guide" aria-hidden="true" hidden></div>
+                    <div id="placeholder" class="placeholder">
+                        <span>กด <b>เปิดกล้อง</b> หรือ <b>ถ่ายรูป / เลือกรูป</b></span>
+                        <span class="placeholder-sub">ถือมือถือห่างจากกระดาษประมาณหนึ่งคืบ</span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="controls">
-                <button id="btnRead" class="btn btn-main" disabled>🔊 อ่านเลย</button>
-                <button id="btnCamera" class="btn">📷 เปิดกล้อง</button>
-                <input id="fileInput" type="file" accept="image/*" class="visually-hidden">
-                <label class="btn" for="fileInput">🖼️ ถ่ายรูป / เลือกรูป</label>
-                <button id="btnAuto" class="btn" aria-pressed="false" disabled>🔁 อ่านอัตโนมัติ: ปิด</button>
-                <button id="btnTorch" class="btn" aria-pressed="false" hidden>🔦 ไฟฉาย: ปิด</button>
-                <button id="btnRepeat" class="btn" disabled>↩️ อ่านซ้ำ</button>
-                <button id="btnStop" class="btn btn-wide">⏹️ หยุดเสียง</button>
-            </div>
+                <div class="controls">
+                    <button id="btnRead" class="btn btn-main" disabled>อ่านเลย</button>
+                    <button id="btnCamera" class="btn">เปิดกล้อง</button>
+                    <input id="fileInput" type="file" accept="image/*" class="visually-hidden">
+                    <label class="btn" for="fileInput">ถ่ายรูป / เลือกรูป</label>
+                    <button id="btnAuto" class="btn" aria-pressed="false" disabled>อ่านอัตโนมัติ: ปิด</button>
+                    <button id="btnTorch" class="btn" aria-pressed="false" hidden>ไฟฉาย: ปิด</button>
+                    <button id="btnRepeat" class="btn" disabled>อ่านซ้ำ</button>
+                    <button id="btnStop" class="btn btn-wide">หยุดเสียง</button>
+                </div>
 
-            <div class="settings">
-                <label>ภาษาที่อ่าน
-                    <select id="lang">
-                        <option value="tha+eng" selected>ไทย + อังกฤษ</option>
-                        <option value="tha">ไทย</option>
-                        <option value="eng">English</option>
-                    </select>
-                </label>
-                <label>ความเร็วเสียง
-                    <input id="rate" type="range" min="0.5" max="1.3" step="0.05" value="0.8">
-                </label>
-            </div>
+                <div class="settings">
+                    <label>ภาษาที่อ่าน
+                        <select id="lang">
+                            <option value="tha+eng" selected>ไทย + อังกฤษ</option>
+                            <option value="tha">ไทย</option>
+                            <option value="eng">English</option>
+                        </select>
+                    </label>
+                    <label>ความเร็วเสียง
+                        <input id="rate" type="range" min="0.5" max="1.3" step="0.05" value="0.8">
+                    </label>
+                </div>
 
-            <p id="voiceWarn" class="warn" hidden>
-                เครื่องนี้ยังไม่มีเสียงอ่านภาษาไทย: ไปที่ ตั้งค่า → การช่วยเหลือพิเศษ → เอาต์พุตการอ่านออกเสียง
-                แล้วเลือก Google และดาวน์โหลดเสียงภาษาไทย
-            </p>
-            <div id="status" class="status" role="status" aria-live="polite">กำลังเตรียมตัวอ่าน…</div>
-            <div id="result" class="result" aria-live="off"></div>
-        </section>
-    </main>
-    <footer>
-        <h4>CREDIT BY</h4>
-        <div class="ar">
-            <p class="name">Weerawit Pornsatetharat</p>
-            <p class="email">pkpxngkaelngkhn@gmail.com</p>
+                <p id="voiceWarn" class="warn" hidden>
+                    เครื่องนี้ยังไม่มีเสียงอ่านภาษาไทย ไปที่ ตั้งค่า → การช่วยเหลือพิเศษ → เอาต์พุตการอ่านออกเสียง
+                    แล้วเลือก Google และดาวน์โหลดเสียงภาษาไทย
+                </p>
+                <div id="status" class="status" role="status" aria-live="polite">กำลังเตรียมตัวอ่าน…</div>
+                <div id="result" class="result" aria-live="off"></div>
+            </section>
+
+            <figure class="cutout bleed">
+                <div class="art grain torn-both" data-paint="eye" role="img"
+                     aria-label="ภาพตัดแปะกระดาษรูปดวงตา ล้อมด้วยจุดอักษรเบรลล์"></div>
+            </figure>
+
+            <section class="layer" id="tips">
+                <h2>ถ่ายอย่างไรให้อ่านแม่น</h2>
+                <p class="stop-note">ได้มาจากการทดลองกับภาพจำลองจากกล้องมือถือ 100 ภาพ</p>
+                <ol class="tips">
+                    <li><strong>ถือห่างประมาณหนึ่งคืบ</strong> ถ้าใกล้เกินไปกล้องจะโฟกัสไม่ทัน ถ้าไกลเกินไปตัวหนังสือจะเล็กจนอ่านผิด</li>
+                    <li><strong>ให้ข้อความอยู่ในกรอบกลางจอ</strong> ระบบอ่านเฉพาะในกรอบ เลขหน้าและหัวกระดาษด้านนอกจะไม่ถูกอ่าน</li>
+                    <li><strong>รอให้กรอบเป็นสีเขียว</strong> แปลว่าภาพนิ่งพอแล้ว ถ้ากด "อ่านเลย" ระบบจะรอให้ภาพนิ่งเองสูงสุด 3 วินาที</li>
+                    <li><strong>ในที่มืด เปิดไฟฉาย</strong> ปุ่มไฟฉายจะขึ้นมาเองถ้ามือถือรองรับ</li>
+                </ol>
+            </section>
+
+            <section class="layer" id="about">
+                <h2>ผู้จัดทำ</h2>
+                <ul class="credits">
+                    <li><span class="who">Weerawit Pornsatetharat</span><span class="mail">pkpxngkaelngkhn@gmail.com</span></li>
+                    <li><span class="who">Phubet Kaikaew</span><span class="mail">smartpoonpoon@gmail.com</span></li>
+                    <li><span class="who">Phakchira Phukhang</span><span class="mail">phakchira.ng@gmail.com</span></li>
+                </ul>
+            </section>
+        </main>
+
+        <div class="band">
+            <div class="art grain torn-top" data-paint="horizon" role="img" aria-label="ขอบฟ้ายามรุ่งสาง ไล่สีจากน้ำเงินเข้มไปส้ม"></div>
         </div>
-        <div class="ar">
-            <p class="name">Phubet Kaikaew</p>
-            <p class="email">smartpoonpoon@gmail.com</p>
-        </div>
-        <div class="ar">
-            <p class="name">Phakchira Phukhang</p>
-            <p class="email">phakchira.ng@gmail.com</p>
+    </div>
+
+    <footer class="site-foot">
+        <div class="foot-inner">
+            <p class="foot-title">New Eyes</p>
+            <ul class="foot-list">
+                <li><a href="https://github.com/PhubetKaikaew/NEWEYES">โค้ดบน GitHub</a></li>
+                <li><a href="https://github.com/PhubetKaikaew/NEWEYES/blob/main/experiments/REPORT.md">รายงานผลการทดลองความแม่นยำ</a></li>
+                <li><a href="#top">กลับขึ้นด้านบน</a></li>
+            </ul>
+            <p class="foot-note">ภาพและข้อความที่ถ่ายไม่ถูกส่งออกจากเครื่อง ทุกอย่างประมวลผลในเบราว์เซอร์</p>
         </div>
     </footer>
 
@@ -88,5 +139,6 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
     <script src="preprocess.js"></script>
     <script src="app.js"></script>
+    <script src="decor.js"></script>
 </body>
 </html>
