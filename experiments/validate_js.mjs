@@ -25,16 +25,18 @@ const out = await Promise.all(items.map(async (it) => {
     const ctx = c.getContext("2d");
     ctx.drawImage(img, 0, 0);
     const { data } = ctx.getImageData(0, 0, img.width, img.height);
+    const recognize = async (p) => {
+        const oc = createCanvas(p.width, p.height);
+        const id = oc.getContext("2d").createImageData(p.width, p.height);
+        id.data.set(p.rgba);
+        oc.getContext("2d").putImageData(id, 0, 0);
+        return (await scheduler.addJob("recognize", oc.toBuffer("image/png"))).data;
+    };
     const t = Date.now();
-    const p = NE.prepare(data, img.width, img.height);
+    const best = await NE.readBest(data, img.width, img.height, NE.ROI, recognize, 60, Number(process.env.TARGET_H || 28));
     prepMs += Date.now() - t;
-    const oc = createCanvas(p.width, p.height);
-    const id = oc.getContext("2d").createImageData(p.width, p.height);
-    id.data.set(p.rgba);
-    oc.getContext("2d").putImageData(id, 0, 0);
-    const r = await scheduler.addJob("recognize", oc.toBuffer("image/png"));
-    return { ...it, pipeline: "JS_P9|" + psm, psm, text: NE.filterLines(r.data), raw: r.data.text, info: p.info, words: [] };
+    return { ...it, pipeline: "JS_best|" + psm, psm, text: best.text, deg: best.deg, q: best.q, lm: best.lm, info: best.prep.info, words: [] };
 }));
 await scheduler.terminate();
 fs.writeFileSync(outPath, JSON.stringify(out));
-console.log(`done ${out.length}, preprocess avg ${(prepMs / out.length).toFixed(0)} ms/frame`);
+console.log(`done ${out.length}, avg ${(prepMs / out.length).toFixed(0)} ms/frame (incl. OCR, parallel)`);

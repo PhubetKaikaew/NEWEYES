@@ -120,8 +120,8 @@ function similarity(a, b) {
     return (2 * hits) / (a.length + b.length - 2);
 }
 
-// ถ่ายภาพความละเอียดเต็มจากกล้อง/รูป แล้วเตรียมภาพ (เฉพาะในกรอบ, ปรับขนาดตัวอักษร, ลบเงา)
-function captureAndPrepare() {
+// ถ่ายภาพความละเอียดเต็มจากกล้อง/รูป
+function grabFrame() {
     const isVideo = Boolean(stream && video.videoWidth);
     const src = isVideo ? video : photo;
     const W = isVideo ? video.videoWidth : photo.naturalWidth;
@@ -133,13 +133,18 @@ function captureAndPrepare() {
     ctx.drawImage(src, 0, 0, W, H);
     // รูปที่เลือกเอง ข้อความอาจอยู่ตรงไหนก็ได้ จึงใช้ทั้งภาพ
     const roi = isVideo ? NEPrep.ROI : { x0: 0, y0: 0, x1: 1, y1: 1 };
-    const p = NEPrep.prepare(ctx.getImageData(0, 0, W, H).data, W, H, roi);
+    return { data: ctx.getImageData(0, 0, W, H).data, W, H, roi };
+}
+
+// ส่งภาพที่เตรียมแล้วให้ Tesseract
+async function recognizePrepared(w, p) {
     canvas.width = p.width;
     canvas.height = p.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     const img = ctx.createImageData(p.width, p.height);
     img.data.set(p.rgba);
     ctx.putImageData(img, 0, 0);
-    return { canvas, info: p.info };
+    return (await w.recognize(canvas)).data;
 }
 
 async function waitForSteady(maxMs) {
@@ -166,18 +171,21 @@ async function readNow(auto = false) {
         }
         if (!auto) setStatus("กำลังอ่านข้อความ…");
         await sleep(0); // ให้หน้าจออัปเดตก่อนประมวลผลภาพ
-        const shot = captureAndPrepare();
-        if (!shot) return;
-        const { data } = await w.recognize(shot.canvas);
-        const text = NEPrep.filterLines(data, LINE_MIN_CONF);
+        const frame = grabFrame();
+        if (!frame) return;
+        // ตรวจทิศทางตัวหนังสือ (เช่นถือมือถือแนวตั้งถ่ายการ์ดแนวนอน) แล้วเลือกมุมที่อ่านได้ดีที่สุด
+        const best = await NEPrep.readBest(frame.data, frame.W, frame.H, frame.roi, (p) => recognizePrepared(w, p), LINE_MIN_CONF);
+        const text = best.text;
+        const readable = text.replace(/\s/g, "").length >= 3 && (best.good || best.q >= 10);
 
-        if (text.replace(/\s/g, "").length < 3) {
-            const tooSmall = shot.info.charH && shot.info.charH < SMALL_CHAR_PX;
+        if (!readable) {
+            const charH = best.prep.info.charH;
+            const tooSmall = charH && charH < SMALL_CHAR_PX;
             const hint = tooSmall
                 ? "ตัวหนังสือเล็กเกินไป ลองเลื่อนกล้องเข้าใกล้อีกนิด"
                 : stream
-                ? "ไม่พบข้อความ ลองให้ข้อความอยู่กลางจอ และเพิ่มแสง"
-                : "ไม่พบข้อความในรูปนี้";
+                ? "ยังอ่านไม่ออก ลองให้ข้อความอยู่กลางกรอบ ถือให้นิ่ง และเพิ่มแสง"
+                : "ไม่พบข้อความที่อ่านได้ในรูปนี้";
             if (!auto) {
                 setStatus(hint);
                 speak(hint);
@@ -190,7 +198,8 @@ async function readNow(auto = false) {
         if (auto && similarity(text, lastSpoken) >= SAME_TEXT_THRESHOLD) return;
 
         resultEl.textContent = text;
-        setStatus(`อ่านได้แล้ว (ความมั่นใจ ${Math.round(data.confidence)}%)`);
+        const turned = best.deg ? ` · หมุนภาพให้ ${best.deg === 180 ? "กลับหัว" : "90°"} อัตโนมัติ` : "";
+        setStatus(`อ่านได้แล้ว (ความมั่นใจ ${Math.round(best.confidence)}%)${turned}`);
         lastSpoken = text;
         btnRepeat.disabled = false;
         speak(text);

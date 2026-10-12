@@ -1,4 +1,4 @@
-// NEW EYES — ของตกแต่ง: ภาพตัดแปะที่วาดด้วยโค้ด + ผีเสื้อกระดาษตอนเปิดหน้าเว็บ
+// NEW EYES — ของตกแต่ง: ภาพตัดแปะที่วาดด้วยโค้ด + ผีเสื้อ (Monarch / Blue Morpho / Swallowtail) บินตอนเปิดหน้าเว็บ
 // ไม่มีผลกับการทำงานของตัวอ่าน และปิดการเคลื่อนไหวเองถ้าผู้ใช้ตั้งค่าลดการเคลื่อนไหว
 (function () {
     const root = document.documentElement;
@@ -92,43 +92,89 @@
         if (p) el.style.backgroundImage = `url(${p()})`;
     });
 
-    // ---------- ผีเสื้อกระดาษ ----------
-    const cream = cv("--cream");
-    const PALETTES = [
-        [cv("--cut-1"), cv("--cut-5"), cream],
-        [cv("--cut-2"), cv("--cut-4"), cream],
-        [cv("--cut-3"), cv("--cut-5"), cream],
-        [cv("--cut-5"), cv("--cut-2"), cv("--cut-4")],
-        [cream, cv("--cut-1"), cv("--cut-2")],
-        [cv("--cut-2"), cv("--cut-5"), cv("--cut-4")],
-    ];
+    // ---------- ผีเสื้อ ----------
+    // ปีกครึ่งซ้าย (viewBox 0 0 60 110, ลำตัวอยู่ที่ x=60) — ปีกขวาใช้รูปเดียวกันกลับด้าน
+    const FORE = "M60,44 C52,30 36,10 10,3 C4,2 1,6 2,12 C5,26 16,42 27,51 C39,54 50,52 60,50 Z";
+    const HIND = "M60,50 C48,52 35,54 25,60 C15,67 11,80 17,90 C23,99 37,98 46,88 C53,79 58,66 60,55 Z";
+    const HIND_TAIL = "M60,50 C48,52 35,54 25,60 C15,67 11,80 17,90 C22,97 30,98 35,95 C35,101 33,107 31,110 C36,108 40,101 41,94 C47,87 54,76 57,66 C59,61 60,57 60,55 Z";
+    const dots = (pts, r, fill) => pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}"/>`).join("");
 
-    function butterflySVG([c1, c2, c3]) {
-        const edge = `stroke="${cream}" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"`;
-        const wing = `
-            <path d="M-2,-4 C-16,-40 -50,-42 -46,-14 C-43,3 -22,5 -2,2 Z" fill="${c1}" ${edge}/>
-            <path d="M-2,2 C-24,6 -42,22 -31,37 C-20,47 -6,28 -2,8 Z" fill="${c1}" ${edge}/>
-            <path d="M-9,-7 C-20,-29 -39,-31 -38,-16 C-36,-6 -21,-3 -9,-3 Z" fill="${c2}"/>
-            <circle cx="-31" cy="-21" r="4.2" fill="${c3}"/>
-            <circle cx="-22" cy="26" r="5" fill="${c2}"/>`;
-        return `
-        <svg viewBox="-50 -50 100 100" aria-hidden="true" focusable="false">
-            <g class="paper">
-                <g class="wing">${wing}</g>
-                <g transform="scale(-1,1)"><g class="wing">${wing}</g></g>
-                <ellipse cx="0" cy="2" rx="2.6" ry="17" fill="${cv("--cut-4")}" ${edge}/>
-                <path d="M-1,-14 C-4,-24 -9,-30 -13,-32 M1,-14 C4,-24 9,-30 13,-32" stroke="${cv("--cut-4")}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    // ลวดลายปีกจริงของผีเสื้อ 3 พันธุ์
+    const SPECIES = {
+        monarch: `
+            <path d="${HIND}" fill="url(#bfMonarch)"/>
+            <path d="${FORE}" fill="url(#bfMonarch)"/>
+            <g stroke="#140c06" stroke-width="1.6" fill="none" stroke-linecap="round">
+                <path d="M59,46 C46,30 30,14 9,6"/><path d="M59,47 C44,36 28,26 6,18"/><path d="M59,48 C46,42 32,38 13,32"/>
+                <path d="M58,49 C46,48 36,46 24,46"/><path d="M58,53 C46,60 32,68 20,82"/><path d="M58,54 C49,66 40,80 30,94"/>
+                <path d="M59,55 C54,68 50,82 44,89"/><path d="M58,52 C44,55 32,58 22,66"/>
             </g>
-        </svg>`;
-    }
+            <path d="${FORE}" fill="none" stroke="#140c06" stroke-width="5"/>
+            <path d="${HIND}" fill="none" stroke="#140c06" stroke-width="5"/>
+            <path d="M10,3 C4,2 1,6 2,12 C5,22 10,30 16,36 C18,26 20,16 24,8 C19,5 14,3 10,3 Z" fill="#140c06"/>
+            ${dots([[8,11],[12,17],[8,22],[14,24],[17,13],[20,9]], 1.3, "#f6efe2")}
+            ${dots([[21,29],[24,34]], 1.6, "#f2a33a")}
+            ${dots([[3.6,15],[6,26],[12,37],[19,46],[17,87],[24,93],[33,95],[42,90],[14,77]], 1, "#f6efe2")}`,
+        morpho: `
+            <path d="${HIND}" fill="url(#bfMorpho)"/>
+            <path d="${FORE}" fill="url(#bfMorpho)"/>
+            <path d="${FORE}" fill="url(#bfSheen)"/>
+            <g stroke="#0b2a6e" stroke-width=".8" fill="none" opacity=".55">
+                <path d="M59,46 C46,30 30,14 9,6"/><path d="M59,47 C44,36 28,26 6,18"/><path d="M58,49 C46,46 32,42 16,40"/>
+                <path d="M58,53 C46,60 32,68 20,82"/><path d="M58,54 C49,66 40,80 30,94"/>
+            </g>
+            <path d="${FORE}" fill="none" stroke="#06122b" stroke-width="7"/>
+            <path d="${HIND}" fill="none" stroke="#06122b" stroke-width="6"/>
+            ${dots([[9,10],[6,17],[13,8]], 1.4, "#eaf4ff")}
+            ${dots([[20,88],[30,94],[40,91]], 1.1, "#c9d9ff")}`,
+        swallowtail: `
+            <path d="${HIND_TAIL}" fill="url(#bfSwallow)"/>
+            <path d="${FORE}" fill="url(#bfSwallow)"/>
+            <g fill="#17130c">
+                <path d="M24,7 C26,16 30,26 36,36 L40,38 C34,28 30,18 29,9 Z"/>
+                <path d="M38,16 C40,24 44,32 50,40 L53,41 C48,33 44,25 42,18 Z"/>
+                <path d="M14,4 C16,10 20,18 25,25 L28,26 C24,19 21,11 19,5 Z"/>
+                <path d="M60,44 C56,40 52,38 50,40 C54,44 57,47 60,48 Z"/>
+                <path d="M60,52 C52,56 46,62 42,72 L46,74 C50,64 55,58 60,56 Z"/>
+            </g>
+            <path d="${FORE}" fill="none" stroke="#17130c" stroke-width="5"/>
+            <path d="${HIND_TAIL}" fill="none" stroke="#17130c" stroke-width="5.5"/>
+            ${dots([[4,12],[7,24],[14,36],[22,46]], 1.2, "#f7d84a")}
+            ${dots([[18,84],[24,91],[32,93]], 2.2, "#4b8fe0")}
+            <circle cx="44" cy="86" r="3" fill="#e8642a"/><circle cx="44" cy="86" r="1.3" fill="#17130c"/>`,
+    };
+    const ORDER = ["monarch", "morpho", "swallowtail", "monarch", "swallowtail", "morpho"];
+
+    // gradient ของแต่ละพันธุ์ ประกาศครั้งเดียวทั้งหน้า
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    defs.setAttribute("width", "0"); defs.setAttribute("height", "0"); defs.setAttribute("aria-hidden", "true");
+    defs.style.position = "absolute";
+    defs.innerHTML = `<defs>
+        <radialGradient id="bfMonarch" cx="100%" cy="50%" r="95%"><stop offset="0" stop-color="#b8440c"/><stop offset=".45" stop-color="#e8741c"/><stop offset="1" stop-color="#f7a83a"/></radialGradient>
+        <radialGradient id="bfMorpho" cx="100%" cy="48%" r="100%"><stop offset="0" stop-color="#0a2a78"/><stop offset=".35" stop-color="#1f6fe0"/><stop offset=".7" stop-color="#5fd0ff"/><stop offset="1" stop-color="#1a5fd0"/></radialGradient>
+        <linearGradient id="bfSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".45" stop-color="#e9fbff" stop-opacity=".35"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        <radialGradient id="bfSwallow" cx="100%" cy="50%" r="100%"><stop offset="0" stop-color="#e2b52a"/><stop offset=".5" stop-color="#f7d84a"/><stop offset="1" stop-color="#fbe98a"/></radialGradient>
+    </defs>`;
+    document.body.appendChild(defs);
+
+    const wingSVG = (sp) => `<svg viewBox="0 0 60 110" preserveAspectRatio="xMaxYMid meet" aria-hidden="true" focusable="false">${SPECIES[sp]}</svg>`;
+    const BODY = `<svg class="body" viewBox="0 0 12 110" aria-hidden="true" focusable="false">
+        <path d="M5,40 C2,24 -2,14 -4,8 M7,40 C10,24 14,14 16,8" stroke="#1a1410" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <circle cx="-4" cy="8" r="1.4" fill="#1a1410"/><circle cx="16" cy="8" r="1.4" fill="#1a1410"/>
+        <ellipse cx="6" cy="44" rx="3.2" ry="4" fill="#1a1410"/>
+        <ellipse cx="6" cy="56" rx="2.6" ry="9" fill="#1a1410"/>
+        <ellipse cx="6" cy="78" rx="2" ry="15" fill="#241a12"/>
+        <circle cx="5" cy="52" r=".7" fill="#f6efe2"/><circle cx="7" cy="58" r=".7" fill="#f6efe2"/>
+    </svg>`;
 
     function makeButterfly(i, size) {
         const el = document.createElement("div");
         el.className = "bf";
         el.style.setProperty("--size", `${size}px`);
-        el.style.setProperty("--flap", `${(0.2 + Math.random() * 0.12).toFixed(2)}s`);
-        el.style.setProperty("--rest-delay", `${(-Math.random() * 5).toFixed(2)}s`);
-        el.innerHTML = butterflySVG(PALETTES[i % PALETTES.length]);
+        el.style.setProperty("--flap", `${(0.13 + Math.random() * 0.06).toFixed(3)}s`);
+        el.style.setProperty("--rest-delay", `${(-Math.random() * 6).toFixed(2)}s`);
+        const sp = ORDER[i % ORDER.length];
+        el.innerHTML = `<div class="wing left">${wingSVG(sp)}</div><div class="wing right">${wingSVG(sp)}</div>${BODY}`;
         return el;
     }
 
@@ -151,7 +197,7 @@
         bf.classList.add("resting");
         bf.style.transform = `rotate(${perch.rot}deg)`;
         bf.style.left = `${perch.w * perch.ax - size / 2}px`;
-        bf.style.top = `${perch.h * perch.ay - size / 2}px`;
+        bf.style.top = `${perch.h * perch.ay - size * 0.46}px`;
         perch.el.appendChild(bf);
     }
 

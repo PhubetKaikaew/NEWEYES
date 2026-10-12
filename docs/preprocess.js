@@ -8,7 +8,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
     // กรองนำสายตา (สัดส่วนของเฟรม) — อ่านเฉพาะข้างใน ตัดหัวกระดาษ/เลขหน้า/ของรอบ ๆ ทิ้ง
     const ROI = { x0: 0.1, y0: 0.2, x1: 0.9, y1: 0.8 };
-    const TARGET_CHAR_H = 28; // ความสูงตัวอักษรที่ Tesseract อ่านแม่นที่สุด (px)
+    const TARGET_CHAR_H = 20; // ความสูงตัวอักษรที่อ่านแม่นและเร็วที่สุดจากการทดลอง (ลอง 20/24/28 px)
     const NOISE_THR = 2;      // noise เกินนี้ = แสงน้อย -> เบลอเบา ๆ ก่อน และไม่เพิ่มความคม
     const MAX_PIXELS = 8e6;
     const MAX_ROI_W = 2400;   // ภาพจากกล้องความละเอียดสูงมาก ย่อก่อนเพื่อความเร็ว
@@ -230,17 +230,46 @@
         return hs.length >= 5 ? median(hs) : null;
     }
 
+    // ---------- ทิศทางตัวหนังสือ ----------
+
+    /** ความ "เป็นแถว" ของหมึก: บรรทัดตัวหนังสือทำให้ผลรวมหมึกรายแถวขึ้นลงเป็นจังหวะ (CV สูง) */
+    function profileCV(ink, w, h, alongRows) {
+        const n = alongRows ? h : w;
+        const prof = new Float32Array(n);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (ink[y * w + x]) prof[alongRows ? y : x]++;
+        let s = 0, s2 = 0;
+        for (let i = 1; i < n - 1; i++) {
+            const v = (prof[i - 1] + prof[i] + prof[i + 1]) / 3;
+            s += v; s2 += v * v;
+        }
+        const m = s / (n - 2);
+        return m > 0 ? Math.sqrt(Math.max(0, s2 / (n - 2) - m * m)) / m : 0;
+    }
+
+    /** ตัวหนังสือในกรอบเรียงแนวนอนหรือแนวตั้ง (มือถือถือแนวตั้งถ่ายการ์ดแนวนอน -> ตัวหนังสือหมุน 90°) */
+    function textOrientation(rgba, W, H, roi = ROI) {
+        let { g, w, h } = grayROI(rgba, W, H, roi);
+        const s = 400 / Math.max(w, h);
+        if (s < 1) ({ g, w, h } = resize(g, w, h, s));
+        const f = flat(g, w, h);
+        const thr = otsu(f);
+        const ink = new Uint8Array(w * h);
+        for (let i = 0; i < f.length; i++) ink[i] = f[i] <= thr ? 1 : 0;
+        const rows = profileCV(ink, w, h, true), cols = profileCV(ink, w, h, false);
+        return { vertical: cols > rows * 1.15, rows, cols };
+    }
+
     // ---------- รวมทุกขั้นตอน ----------
 
     /** rgba ทั้งเฟรม -> ภาพขาวดำพร้อมส่ง OCR (เฉพาะในกรอบ) */
-    function prepare(rgba, W, H, roi = ROI) {
+    function prepare(rgba, W, H, roi = ROI, targetH = TARGET_CHAR_H) {
         let { g, w, h } = grayROI(rgba, W, H, roi);
         if (w > MAX_ROI_W) ({ g, w, h } = resize(g, w, h, MAX_ROI_W / w));
         const noise = noiseSigma(g, w, h);
         const noisy = noise > NOISE_THR;
         if (noisy) g = gaussian(g, w, h, 0.8);
         const charH = charHeight(g, w, h);
-        let s = charH ? clamp(TARGET_CHAR_H / charH, 0.5, 4) : 1;
+        let s = charH ? clamp(targetH / charH, 0.5, 4) : 1;
         if (w * h * s * s > MAX_PIXELS) s = Math.sqrt(MAX_PIXELS / (w * h));
         if (Math.abs(s - 1) > 0.05) ({ g, w, h } = resize(g, w, h, s));
         if (!noisy) g = unsharp(g, w, h);
@@ -267,9 +296,16 @@
         return out;
     }
 
-    /** ทิ้งบรรทัดขยะ (เช่นวรรณยุกต์ที่หลุดเป็นบรรทัดเดี่ยว "ะ ส ว") และบรรทัดที่ความมั่นใจต่ำ */
+    const thaiLM = () => (typeof ThaiLM !== "undefined" ? ThaiLM : typeof require === "function" ? safeRequire("./thai-lm.js") : null);
+    function safeRequire(p) {
+        try { return require(p); } catch (e) { return null; }
+    }
+    const LM_JUNK = -6.3; // คะแนนภาษาไทยต่ำกว่านี้ = ขยะ (ข้อความจริง ≈ -3.5..-5, ขยะ ≈ -6.5..-8.5)
+
+    /** ทิ้งบรรทัดขยะ (เช่นวรรณยุกต์ที่หลุดเป็นบรรทัดเดี่ยว "ะ ส ว"), บรรทัดที่ความมั่นใจต่ำ และบรรทัดที่ไม่เหมือนภาษาไทยจริง */
     function filterLines(data, lineMin = 60, minBase = 3) {
         const keep = [];
+        const lm = thaiLM();
         for (const line of data.lines || []) {
             const ws = line.words.filter((w) => w.text.trim());
             if (!ws.length) continue;
@@ -277,10 +313,109 @@
             const len = ws.reduce((a, w) => a + w.text.length, 0);
             const conf = ws.reduce((a, w) => a + w.confidence * w.text.length, 0) / len;
             if ((txt.match(BASE) || []).length < minBase || conf < lineMin) continue;
+            if (lm) {
+                const s = lm.score(txt);
+                if (s.n >= 4 && s.perChar < LM_JUNK) continue;
+            }
             keep.push(txt.replace(/\s+/g, " ").trim());
         }
         return keep.join("\n");
     }
 
-    return { ROI, prepare, sharpness, filterLines, grayROI, noiseSigma, charHeight };
+    // ---------- ทำความสะอาดก่อนพูด ----------
+
+    const LONE_MARK = /^[ะ-ฺเ-๎]+$/; // สระ/วรรณยุกต์ลอย ๆ
+    /** ตัดสัญลักษณ์และเศษตัวอักษรที่ TTS จะอ่านออกมาเป็นเสียงแปลก ๆ */
+    function cleanForSpeech(text) {
+        const out = [];
+        for (let line of text.split("\n")) {
+            line = line.replace(/[^ก-๛A-Za-z0-9 .,?!:/%\-]/g, " ").replace(/\s+/g, " ").trim();
+            const thai = (line.match(/[ก-๛]/g) || []).length;
+            if (thai) {
+                line = line
+                    .replace(/(\d)\s*[-–]\s*(\d)/g, "$1 ถึง $2") // 08.30 - 16.30 -> 08.30 ถึง 16.30
+                    .replace(/(\d)\s*[นu]\s*\.?(?=\s|$)/g, "$1 นาฬิกา"); // 16.30 น. -> 16.30 นาฬิกา (OCR มักอ่าน น เป็น u)
+            }
+            const latin = (line.match(/[A-Za-z]/g) || []).length;
+            if (thai >= latin) {
+                // บรรทัดภาษาไทย: ตัดคำอังกฤษ 1-2 ตัวที่หลุดมา (มักเป็นขยะจากรูปภาพ) และสระ/วรรณยุกต์ลอย
+                let toks = line.split(" ").filter((t) => !/^[A-Za-z]{1,2}[.,:]?$/.test(t) && !LONE_MARK.test(t) && !/^[.,:\-/!?]+$/.test(t));
+                // ตัวอักษรเดี่ยว ๆ ที่เรียงกันตั้งแต่ 2 ตัวขึ้นไป เช่น "ป 5 ด 6 ว 1" = เศษจากรูปภาพ
+                const short = (t) => (t.match(/[ก-ฮA-Za-z0-9]/g) || []).length <= 1;
+                toks = toks.filter((t, i) => !(short(t) && ((i > 0 && short(toks[i - 1])) || (i < toks.length - 1 && short(toks[i + 1])))));
+                line = toks.join(" ");
+            }
+            if ((line.match(/[ก-ฮA-Za-z0-9]/g) || []).length >= 2) out.push(line);
+        }
+        return out.join("\n");
+    }
+
+    // ---------- หมุนภาพ + เลือกมุมที่อ่านได้ดีที่สุด ----------
+
+    function cropRGBA(rgba, W, H, roi) {
+        const x0 = Math.round(W * roi.x0), y0 = Math.round(H * roi.y0);
+        const w = Math.round(W * roi.x1) - x0, h = Math.round(H * roi.y1) - y0;
+        const out = new Uint8ClampedArray(w * h * 4);
+        for (let y = 0; y < h; y++) out.set(rgba.subarray(((y0 + y) * W + x0) * 4, ((y0 + y) * W + x0 + w) * 4), y * w * 4);
+        return { data: out, w, h };
+    }
+
+    /** หมุนภาพตามเข็มนาฬิกา 0/90/180/270 องศา */
+    function rotateRGBA(img, deg) {
+        const { data, w, h } = img;
+        if (!deg) return img;
+        const W = deg === 180 ? w : h, H = deg === 180 ? h : w;
+        const out = new Uint8ClampedArray(W * H * 4);
+        const u32 = new Uint32Array(data.buffer, data.byteOffset, w * h), o32 = new Uint32Array(out.buffer);
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                let X, Y;
+                if (deg === 90) { X = h - 1 - y; Y = x; }
+                else if (deg === 180) { X = w - 1 - x; Y = h - 1 - y; }
+                else { X = y; Y = w - 1 - x; }
+                o32[Y * W + X] = u32[y * w + x];
+            }
+        }
+        return { data: out, w: W, h: H };
+    }
+
+    /** คะแนนความน่าเชื่อถือของผลอ่าน: อักษรไทยที่ "เหมือนภาษาไทยจริง" + อักษรอังกฤษถ่วงด้วยความมั่นใจ */
+    function quality(text, conf) {
+        const lm = thaiLM();
+        const s = lm ? lm.score(text) : { perChar: -5, n: (text.match(/[ก-๛]/g) || []).length };
+        const latin = (text.match(/[A-Za-z]/g) || []).length;
+        const thaiQ = s.n ? s.n * clamp((s.perChar + 7) / 3, 0, 1) : 0;
+        const q = thaiQ + latin * (conf / 100) ** 2;
+        const good = (s.n >= 12 && s.perChar >= -5.3) || (s.n < 5 && latin >= 8 && conf >= 75);
+        return { q, good, lm: s.perChar, thai: s.n, latin };
+    }
+
+    /**
+     * อ่านข้อความในกรอบ โดยตรวจทิศทางตัวหนังสือก่อน แล้วลองมุมที่เป็นไปได้ เลือกมุมที่อ่านได้ดีที่สุด
+     * recognize(prepared) -> Promise<tesseract data>
+     */
+    async function readBest(rgba, W, H, roi, recognize, lineMin = 60, targetH = TARGET_CHAR_H) {
+        const crop = cropRGBA(rgba, W, H, roi);
+        const full = { x0: 0, y0: 0, x1: 1, y1: 1 };
+        const orient = textOrientation(crop.data, crop.w, crop.h, full);
+        const order = orient.vertical ? [270, 90] : [0, 180];
+        let best = null;
+        for (const deg of order) {
+            const r = rotateRGBA(crop, deg);
+            const p = prepare(r.data, r.w, r.h, full, targetH);
+            const data = await recognize(p);
+            const text = cleanForSpeech(filterLines(data, lineMin));
+            const qa = quality(text, data.confidence);
+            const cur = { text, deg, prep: p, confidence: data.confidence, ...qa };
+            if (!best || cur.q > best.q) best = cur;
+            if (qa.good) break; // มุมแรกดีพอแล้ว ไม่ต้องลองมุมอื่น (ประหยัดเวลา)
+        }
+        best.vertical = orient.vertical;
+        return best;
+    }
+
+    return {
+        ROI, prepare, sharpness, filterLines, textOrientation, readBest, cleanForSpeech, quality,
+        rotateRGBA, cropRGBA, grayROI, noiseSigma, charHeight,
+    };
 });

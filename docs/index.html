@@ -14,14 +14,8 @@
 <body>
     <a class="skip" href="#reader">ข้ามไปที่ตัวอ่านข้อความ</a>
 
-    <!-- ผีเสื้อกระดาษตัดแปะ (ตกแต่งอย่างเดียว ไม่มีผลกับโปรแกรมอ่านหน้าจอ) -->
+    <!-- ผีเสื้อ (ตกแต่งอย่างเดียว ไม่มีผลกับโปรแกรมอ่านหน้าจอ) -->
     <div id="flight" class="flight" aria-hidden="true"></div>
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-        <filter id="paper-edge" x="-10%" y="-10%" width="120%" height="120%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="n"/>
-            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/>
-        </filter>
-    </svg>
 
     <header class="hero" id="top">
         <div class="art grain" style="background-image:url('images/braille-7326486_1920.jpg')" role="img"
@@ -137,6 +131,7 @@
 
     <canvas id="canvas" hidden></canvas>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+    <script src="thai-lm.js"></script>
     <script src="preprocess.js"></script>
     <script src="app.js"></script>
     <script src="decor.js"></script>
