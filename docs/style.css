@@ -79,6 +79,35 @@ h1 {
     display: block;
 }
 
+/* กรอบนำสายตา = ส่วนที่ OCR อ่านจริง (ตรงกับ NEPrep.ROI) */
+.guide {
+    position: absolute;
+    left: 10%;
+    top: 20%;
+    width: 80%;
+    height: 60%;
+    border: 4px dashed rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s;
+    pointer-events: none;
+}
+
+.guide.steady {
+    border-style: solid;
+    border-color: #4cff7a;
+}
+
+.warn {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    border: 2px solid #b00020;
+    border-radius: 12px;
+    color: #b00020;
+    font-size: 17px;
+    line-height: 1.5;
+}
+
 .placeholder {
     position: absolute;
     inset: 0;

@@ -1,0 +1,21 @@
+{
+  "samples": [
+    {"id": "t01_motto",    "kind": "book",  "font": "THSarabunNew", "text": "การเรียนรู้เป็นสิ่งที่ทุกคนทำได้\nเพียงเปิดใจและลงมือทำทุกวัน"},
+    {"id": "t02_library",  "kind": "sign",  "font": "Tahoma",       "text": "ห้องสมุดเปิดบริการ วันจันทร์ ถึง วันศุกร์\nเวลา 08.30 - 16.30 น."},
+    {"id": "t03_caution",  "kind": "sign",  "font": "Leelawadee UI","text": "ระวัง! พื้นเปียก ลื่น\nกรุณาเดินด้วยความระมัดระวัง"},
+    {"id": "t04_biology",  "kind": "book",  "font": "THSarabunNew", "text": "บทที่ 3 ระบบนิเวศ\nสิ่งมีชีวิตทุกชนิดล้วนพึ่งพาอาศัยกัน\nทั้งพืช สัตว์ และจุลินทรีย์ในดิน"},
+    {"id": "t05_medicine", "kind": "label", "font": "Angsana New",  "text": "ยาพาราเซตามอล 500 มิลลิกรัม\nรับประทานครั้งละ 1 เม็ด ทุก 6 ชั่วโมง\nเมื่อมีอาการปวดหรือมีไข้"},
+    {"id": "t06_price",    "kind": "label", "font": "Leelawadee UI","text": "ราคา 45 บาท\nหมดอายุ 12/05/2027"},
+    {"id": "t07_exit",     "kind": "sign",  "font": "Arial",        "text": "Emergency Exit\nKeep this door closed at all times"},
+    {"id": "t08_science",  "kind": "book",  "font": "Times New Roman","text": "Photosynthesis converts light energy\ninto chemical energy stored in glucose."},
+    {"id": "t09_mixed",    "kind": "sign",  "font": "Tahoma",       "text": "ชั้น 2 ห้อง 204 (Computer Lab)\nเปิดให้ใช้งาน Mon-Fri"},
+    {"id": "t10_uniform",  "kind": "book",  "font": "THSarabunNew", "text": "นักเรียนต้องแต่งกายให้เรียบร้อย\nก่อนเข้าห้องเรียนทุกครั้ง"}
+  ],
+  "clutter": [
+    "ตารางเรียนภาคเรียนที่ 2",
+    "หน้า 47",
+    "แบบฝึกหัดท้ายบท",
+    "Chapter 5 Review",
+    "ข้อ 1-10"
+  ]
+}
