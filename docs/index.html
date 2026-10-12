@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEW EYES</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <main>
+        <div class="tum">
+            <img class="logo" src="images/Lo.jpg" alt="โลโก้ NEW EYES">
+        </div>
+        <header>
+            <h1>NEW&nbsp;EYES</h1>
+        </header>
+        <div class="content">
+            <p>
+                เว็บไซต์นี้ช่วยผู้พิการทางสายตาอ่านหนังสือ เอกสาร และป้าย
+                ด้วยกล้องของมือถือหรือแท็บเล็ต เพียงหันกล้องไปที่ข้อความ
+                ระบบจะอ่านออกเสียงให้ฟัง รองรับภาษาไทยและภาษาอังกฤษ
+            </p>
+        </div>
+
+        <section class="reader" aria-label="ตัวอ่านข้อความ">
+            <div class="viewer">
+                <video id="video" playsinline muted aria-hidden="true"></video>
+                <img id="photo" alt="" hidden>
+                <div id="placeholder" class="placeholder">
+                    กดปุ่ม <b>เปิดกล้อง</b> หรือ <b>ถ่ายรูป / เลือกรูป</b>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="btnRead" class="btn btn-main" disabled>🔊 อ่านเลย</button>
+                <button id="btnCamera" class="btn">📷 เปิดกล้อง</button>
+                <input id="fileInput" type="file" accept="image/*" class="visually-hidden">
+                <label class="btn" for="fileInput">🖼️ ถ่ายรูป / เลือกรูป</label>
+                <button id="btnAuto" class="btn" aria-pressed="false" disabled>🔁 อ่านอัตโนมัติ: ปิด</button>
+                <button id="btnRepeat" class="btn" disabled>↩️ อ่านซ้ำ</button>
+                <button id="btnStop" class="btn btn-wide">⏹️ หยุดเสียง</button>
+            </div>
+
+            <div class="settings">
+                <label>ภาษาที่อ่าน
+                    <select id="lang">
+                        <option value="tha+eng" selected>ไทย + อังกฤษ</option>
+                        <option value="tha">ไทย</option>
+                        <option value="eng">English</option>
+                    </select>
+                </label>
+                <label>ความเร็วเสียง
+                    <input id="rate" type="range" min="0.5" max="1.5" step="0.1" value="0.9">
+                </label>
+            </div>
+
+            <div id="status" class="status" role="status" aria-live="polite">กำลังเตรียมตัวอ่าน…</div>
+            <div id="result" class="result" aria-live="off"></div>
+        </section>
+    </main>
+    <footer>
+        <h4>CREDIT BY</h4>
+        <div class="ar">
+            <p class="name">Weerawit Pornsatetharat</p>
+            <p class="email">pkpxngkaelngkhn@gmail.com</p>
+        </div>
+        <div class="ar">
+            <p class="name">Phubet Kaikaew</p>
+            <p class="email">smartpoonpoon@gmail.com</p>
+        </div>
+        <div class="ar">
+            <p class="name">Phakchira Phukhang</p>
+            <p class="email">phakchira.ng@gmail.com</p>
+        </div>
+    </footer>
+
+    <canvas id="canvas" hidden></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

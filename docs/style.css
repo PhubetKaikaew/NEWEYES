@@ -1,0 +1,290 @@
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    font-family: "IBM Plex Sans Thai", Tahoma, sans-serif;
+    color: #000;
+    background-color: #e9e4da;
+    background-image: url("images/braille-7326486_1920.jpg");
+    background-size: cover;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+main,
+footer {
+    background-color: white;
+    border: 3px solid black;
+    border-radius: 48px;
+    max-width: 960px;
+    margin: 64px auto 0;
+    padding: 16px 32px 32px;
+}
+
+footer {
+    max-width: 760px;
+    margin: 48px auto 64px;
+    padding: 8px 24px 24px;
+}
+
+.tum {
+    display: flex;
+    justify-content: center;
+}
+
+.logo {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    margin: 16px 0 0;
+}
+
+h1 {
+    text-align: center;
+    font-size: 50px;
+    margin: 12px 0 8px;
+}
+
+.content p {
+    font-size: 21px;
+    line-height: 1.6;
+    margin: 0 0 24px;
+    text-align: center;
+}
+
+/* ---------- ตัวอ่าน ---------- */
+.viewer {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 4 / 3;
+    margin: 0 auto 20px;
+    border: 3px solid black;
+    border-radius: 32px;
+    overflow: hidden;
+    background: #111;
+}
+
+.viewer video,
+.viewer img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1.6;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
+    padding: 12px 16px;
+    font: 600 20px "IBM Plex Sans Thai", Tahoma, sans-serif;
+    color: #000;
+    background: #fff;
+    border: 3px solid #000;
+    border-radius: 20px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn:hover:not(:disabled) {
+    background: #f1ede4;
+}
+
+.btn:focus-visible,
+select:focus-visible,
+#fileInput:focus-visible + .btn {
+    outline: 4px solid #1a5cff;
+    outline-offset: 3px;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-main {
+    background: #000;
+    color: #fff;
+}
+
+.btn-main:hover:not(:disabled) {
+    background: #333;
+}
+
+.btn[aria-pressed="true"] {
+    background: #ffd84d;
+}
+
+.settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+    justify-content: center;
+    margin: 20px 0 8px;
+    font-size: 18px;
+}
+
+.settings label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings select {
+    font: inherit;
+    padding: 6px 10px;
+    border: 2px solid #000;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.settings input[type="range"] {
+    width: 140px;
+    accent-color: #000;
+}
+
+.status {
+    margin: 16px 0 8px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    min-height: 1.6em;
+}
+
+.result {
+    min-height: 120px;
+    padding: 16px 20px;
+    border: 2px dashed #000;
+    border-radius: 20px;
+    font-size: 24px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.result:empty::before {
+    content: "ข้อความที่อ่านได้จะขึ้นตรงนี้";
+    color: #777;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* ---------- เครดิต ---------- */
+h4 {
+    text-align: center;
+    font-size: 36px;
+    margin: 16px 0 8px;
+}
+
+.ar {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.name,
+.email {
+    font-size: 22px;
+    width: 330px;
+    margin: 8px 12px;
+}
+
+/* ---------- มือถือ ---------- */
+@media (max-width: 600px) {
+    main,
+    footer {
+        margin: 24px 16px 0;
+        padding: 8px 16px 20px;
+        border-radius: 28px;
+    }
+
+    footer {
+        margin: 24px 16px 32px;
+    }
+
+    .logo {
+        width: 110px;
+        height: 110px;
+    }
+
+    h1 {
+        font-size: 34px;
+    }
+
+    .content p {
+        font-size: 16px;
+    }
+
+    .viewer {
+        border-radius: 20px;
+    }
+
+    .controls {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .btn {
+        font-size: 17px;
+        min-height: 60px;
+        padding: 10px;
+    }
+
+    .btn-wide {
+        grid-column: 1 / -1;
+    }
+
+    .btn-main {
+        grid-column: 1 / -1;
+        min-height: 76px;
+        font-size: 22px;
+    }
+
+    .result {
+        font-size: 20px;
+    }
+
+    h4 {
+        font-size: 24px;
+    }
+
+    .name,
+    .email {
+        font-size: 16px;
+        width: auto;
+        margin: 4px 8px;
+    }
+}
