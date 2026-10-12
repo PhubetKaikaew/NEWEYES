@@ -135,10 +135,12 @@ python -I sim.py scenes        # สร้างภาพจำลอง 100 ภ
 python -I sim.py pipelines     # เตรียมภาพทุกวิธี
 node ocr.mjs data/prep/manifest.json results/pipelines.json
 python analyze.py results/pipelines.json pipelines
+python -I lm_ngram.py && python -I build_lm.py 10 ../docs/thai-lm.js   # โมเดลภาษาไทย (ต้องมี tnc_freq.txt)
 python -I sim.py sequence      # วิดีโอจำลอง
 node make_seq_manifests.mjs     # สร้าง data/seq/m_p0.json, m_p9.json
 node ocr.mjs data/seq/m_p0.json results/seq_p0.json --psm 3
 node ocr.mjs data/seq/m_p9.json results/seq_p9.json --psm 6
 python policy.py
-node validate_js.mjs results/js_p9.json 6   # ยืนยันโค้ดจริงของเว็บ
+node validate_js.mjs results/js_best.json 6   # ยืนยันโค้ดจริงของเว็บ
+node real_best.mjs <ภาพจากมือถือ>              # ทดสอบภาพจริง
 ```
