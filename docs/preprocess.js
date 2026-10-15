@@ -8,6 +8,8 @@
 })(typeof self !== "undefined" ? self : this, function () {
     // กรองนำสายตา (สัดส่วนของเฟรม) — อ่านเฉพาะข้างใน ตัดหัวกระดาษ/เลขหน้า/ของรอบ ๆ ทิ้ง
     const ROI = { x0: 0.1, y0: 0.2, x1: 0.9, y1: 0.8 };
+    // กรอบที่อ่านจริงกว้างกว่ากรอบนำสายตา เพื่อไม่ให้หัวเรื่องบนกระดานหลุด (ข้อความนอก ROI เก็บเฉพาะตัวใหญ่ ดู keepCore)
+    const READ_ROI = { x0: 0.05, y0: 0.1, x1: 0.95, y1: 0.9 };
     const TARGET_CHAR_H = 20; // ความสูงตัวอักษรที่อ่านแม่นและเร็วที่สุดจากการทดลอง (ลอง 20/24/28 px)
     const NOISE_THR = 2;      // noise เกินนี้ = แสงน้อย -> เบลอเบา ๆ ก่อน และไม่เพิ่มความคม
     const MAX_PIXELS = 8e6;
@@ -251,12 +253,57 @@
         let { g, w, h } = grayROI(rgba, W, H, roi);
         const s = 400 / Math.max(w, h);
         if (s < 1) ({ g, w, h } = resize(g, w, h, s));
-        const f = flat(g, w, h);
-        const thr = otsu(f);
+        // ใช้เฉพาะ "เส้นบางที่มืดกว่ารอบ ๆ" (black-hat) เป็นหมึก: ผนัง/ขอบกระดาน/รูปภาพก้อนใหญ่จะไม่ถูกนับ
+        g = gaussian(g, w, h, 0.8);
+        const close = minMax(minMax(g, w, h, 3, true), w, h, 3, false);
         const ink = new Uint8Array(w * h);
-        for (let i = 0; i < f.length; i++) ink[i] = f[i] <= thr ? 1 : 0;
+        for (let i = 0; i < g.length; i++) ink[i] = close[i] - g[i] > 20 ? 1 : 0;
         const rows = profileCV(ink, w, h, true), cols = profileCV(ink, w, h, false);
         return { vertical: cols > rows * 1.15, rows, cols };
+    }
+
+    function minMax(g, w, h, r, useMax) {
+        const t = new Float32Array(w * h), o = new Float32Array(w * h);
+        const pick = useMax ? Math.max : Math.min;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            let v = g[y * w + x];
+            for (let k = Math.max(0, x - r); k <= Math.min(w - 1, x + r); k++) v = pick(v, g[y * w + k]);
+            t[y * w + x] = v;
+        }
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            let v = t[y * w + x];
+            for (let k = Math.max(0, y - r); k <= Math.min(h - 1, y + r); k++) v = pick(v, t[k * w + x]);
+            o[y * w + x] = v;
+        }
+        return o;
+    }
+
+    /**
+     * ตัวหนังสือสีอ่อนบนพื้นเข้ม (กระดานดำ/เขียว) หรือไม่
+     * เทียบ "เส้นบางที่สว่างกว่ารอบ ๆ" (white top-hat) กับ "เส้นบางที่มืดกว่ารอบ ๆ" (black-hat)
+     * พื้นที่ใหญ่ ๆ อย่างผนังหรือขอบกระดานไม่มีผล เพราะไม่ใช่เส้นบาง
+     */
+    function isLightOnDark(rgba, W, H, o = {}) {
+        let { g, w, h } = grayROI(rgba, W, H, { x0: 0, y0: 0, x1: 1, y1: 1 });
+        const s = (o.size || 600) / Math.max(w, h);
+        if (s < 1) ({ g, w, h } = resize(g, w, h, s));
+        g = gaussian(g, w, h, o.blur || 1); // ลบเนื้อผงชอล์ก/จุดเล็ก ๆ ก่อน (ไม่เบลอ = ตรวจผิด 9/48 กระดาน)
+        const r = o.r || 3;
+        const open = minMax(minMax(g, w, h, r, false), w, h, r, true);
+        const close = minMax(minMax(g, w, h, r, true), w, h, r, false);
+        let light = 0, dark = 0;
+        for (let i = 0; i < g.length; i++) {
+            const th = g[i] - open[i], bh = close[i] - g[i];
+            if (th > 25) light += th;
+            if (bh > 25) dark += bh;
+        }
+        return o.raw ? { light, dark } : light > dark * 1.3;
+    }
+
+    function invertRGBA(img) {
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) { d[i] = 255 - d[i]; d[i + 1] = 255 - d[i + 1]; d[i + 2] = 255 - d[i + 2]; }
+        return img;
     }
 
     // ---------- รวมทุกขั้นตอน ----------
@@ -302,24 +349,86 @@
     }
     const LM_JUNK = -6.3; // คะแนนภาษาไทยต่ำกว่านี้ = ขยะ (ข้อความจริง ≈ -3.5..-5, ขยะ ≈ -6.5..-8.5)
 
-    /** ทิ้งบรรทัดขยะ (เช่นวรรณยุกต์ที่หลุดเป็นบรรทัดเดี่ยว "ะ ส ว"), บรรทัดที่ความมั่นใจต่ำ และบรรทัดที่ไม่เหมือนภาษาไทยจริง */
-    function filterLines(data, lineMin = 60, minBase = 3) {
-        const keep = [];
-        const lm = thaiLM();
+    /** แตกแต่ละบรรทัดของ OCR ออกเป็นท่อน ตรงที่เว้นว่างกว้างผิดปกติ (เช่นช่องว่างระหว่างคอลัมน์บนกระดาน) */
+    function segmentsOf(data) {
+        const segs = [];
         for (const line of data.lines || []) {
-            const ws = line.words.filter((w) => w.text.trim());
+            const ws = line.words.filter((w) => w.text.trim()).sort((a, b) => a.bbox.x0 - b.bbox.x0);
             if (!ws.length) continue;
+            const hs = ws.map((w) => w.bbox.y1 - w.bbox.y0).sort((a, b) => a - b);
+            const gapMax = 2.2 * hs[hs.length >> 1];
+            let cur = [ws[0]];
+            for (let i = 1; i < ws.length; i++) {
+                if (ws[i].bbox.x0 - ws[i - 1].bbox.x1 > gapMax) { segs.push(cur); cur = []; }
+                cur.push(ws[i]);
+            }
+            segs.push(cur);
+        }
+        return segs.map((ws) => ({
+            words: ws,
+            x0: Math.min(...ws.map((w) => w.bbox.x0)), x1: Math.max(...ws.map((w) => w.bbox.x1)),
+            y0: Math.min(...ws.map((w) => w.bbox.y0)), y1: Math.max(...ws.map((w) => w.bbox.y1)),
+        }));
+    }
+
+    /**
+     * ลำดับการอ่านแบบ XY-cut: ตัดพื้นที่ตรงช่องว่างที่กว้างที่สุด (แนวนอนหรือแนวตั้ง) ทีละครั้ง
+     * กระดาน "หัวเรื่อง / คอลัมน์ซ้าย / คอลัมน์ขวา" -> หัวเรื่อง, ซ้ายบนลงล่าง, แล้วขวาบนลงล่าง
+     */
+    function readingOrder(segs) {
+        if (segs.length <= 1) return segs;
+        const hMed = segs.map((s) => s.y1 - s.y0).sort((a, b) => a - b)[segs.length >> 1] || 1;
+        function bestGap(lo, hi) {
+            const iv = segs.map((s) => [s[lo], s[hi]]).sort((a, b) => a[0] - b[0]);
+            let end = iv[0][1], best = { size: 0, at: null };
+            for (let i = 1; i < iv.length; i++) {
+                if (iv[i][0] - end > best.size) best = { size: iv[i][0] - end, at: (iv[i][0] + end) / 2 };
+                end = Math.max(end, iv[i][1]);
+            }
+            return best;
+        }
+        const gy = bestGap("y0", "y1"), gx = bestGap("x0", "x1");
+        // ช่องว่างแนวตั้ง (ระหว่างคอลัมน์) ต้องกว้างจริง ๆ ถึงจะแยก ไม่งั้นช่องไฟระหว่างคำจะทำให้แยกผิด
+        const useX = gx.size > hMed * 1.5 && gx.size / hMed * 0.6 > gy.size / hMed;
+        if (!useX && gy.size <= 0) return segs.slice().sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+        const [k0, at] = useX ? ["x0", gx.at] : ["y0", gy.at];
+        const a = segs.filter((s) => s[k0] < at), b = segs.filter((s) => s[k0] >= at);
+        if (!a.length || !b.length) return segs.slice().sort((p, q) => p.y0 - q.y0 || p.x0 - q.x0);
+        return [...readingOrder(a), ...readingOrder(b)];
+    }
+
+    /** ทิ้งท่อนขยะ (เช่นวรรณยุกต์ที่หลุดเป็นบรรทัดเดี่ยว "ะ ส ว"), ท่อนที่ความมั่นใจต่ำ และท่อนที่ไม่เหมือนภาษาไทยจริง แล้วเรียงตามตำแหน่ง */
+    function filterLines(data, lineMin = 60, minBase = 3, core = null) {
+        const lm = thaiLM();
+        const keep = [];
+        for (const seg of segmentsOf(data)) {
+            const ws = seg.words;
             const txt = joinWords(ws.map((w) => w.text));
             const len = ws.reduce((a, w) => a + w.text.length, 0);
             const conf = ws.reduce((a, w) => a + w.confidence * w.text.length, 0) / len;
             if ((txt.match(BASE) || []).length < minBase || conf < lineMin) continue;
             if (lm) {
-                const s = lm.score(txt);
-                if (s.n >= 4 && s.perChar < LM_JUNK) continue;
+                const sc = lm.score(txt);
+                if (sc.n >= 4 && sc.perChar < LM_JUNK) continue;
             }
-            keep.push(txt.replace(/\s+/g, " ").trim());
+            seg.text = txt.replace(/\s+/g, " ").trim();
+            keep.push(seg);
         }
-        return keep.join("\n");
+        return readingOrder(keep).map((s) => s.text).join("\n");
+    }
+
+    /**
+     * อ่านกรอบกว้าง แต่เก็บข้อความนอกกรอบหลักเฉพาะที่ "ตัวใหญ่กว่า" ข้อความในกรอบ (= หัวเรื่องบนกระดาน)
+     * ส่วนเลขหน้า/หัวกระดาษ/ของรอบ ๆ ที่ตัวเล็กกว่าจะถูกทิ้ง
+     * core = {x0,y0,x1,y1, W, H}: กรอบหลักในพิกัดของภาพที่ส่ง OCR
+     */
+    function keepCore(segs, core) {
+        const cx = (s) => (s.x0 + s.x1) / 2, cy = (s) => (s.y0 + s.y1) / 2;
+        const inside = segs.filter((s) => cx(s) >= core.x0 * core.W && cx(s) <= core.x1 * core.W && cy(s) >= core.y0 * core.H && cy(s) <= core.y1 * core.H);
+        if (!inside.length) return segs; // ถือกล้องเลยกรอบ: อ่านทั้งหมดดีกว่าไม่อ่านเลย
+        const hs = inside.map((s) => s.y1 - s.y0).sort((a, b) => a - b);
+        const hMed = hs[hs.length >> 1];
+        return segs.filter((s) => inside.includes(s) || s.y1 - s.y0 >= hMed * 1.15);
     }
 
     // ---------- ทำความสะอาดก่อนพูด ----------
@@ -390,32 +499,94 @@
         return { q, good, lm: s.perChar, thai: s.n, latin };
     }
 
+    // กรอบหลัก (พิกัดเฟรม) -> พิกัดของภาพที่ส่ง OCR (หลังครอปกรอบกว้าง + หมุน + ย่อขยาย)
+    function coreIn(core, roi, deg, p) {
+        if (!core) return null;
+        const nx = (x) => (x - roi.x0) / (roi.x1 - roi.x0), ny = (y) => (y - roi.y0) / (roi.y1 - roi.y0);
+        const pts = [[nx(core.x0), ny(core.y0)], [nx(core.x1), ny(core.y1)]].map(([x, y]) =>
+            deg === 90 ? [1 - y, x] : deg === 180 ? [1 - x, 1 - y] : deg === 270 ? [y, 1 - x] : [x, y]);
+        return {
+            x0: Math.min(pts[0][0], pts[1][0]), x1: Math.max(pts[0][0], pts[1][0]),
+            y0: Math.min(pts[0][1], pts[1][1]), y1: Math.max(pts[0][1], pts[1][1]),
+            W: p.width, H: p.height,
+        };
+    }
+
     /**
      * อ่านข้อความในกรอบ โดยตรวจทิศทางตัวหนังสือก่อน แล้วลองมุมที่เป็นไปได้ เลือกมุมที่อ่านได้ดีที่สุด
      * recognize(prepared) -> Promise<tesseract data>
      */
-    async function readBest(rgba, W, H, roi, recognize, lineMin = 60, targetH = TARGET_CHAR_H) {
+    async function readBest(rgba, W, H, roi, recognize, lineMin = 60, targetH = TARGET_CHAR_H, opts = {}) {
         const crop = cropRGBA(rgba, W, H, roi);
+        // กระดานดำ/เขียว: กลับสีให้เป็นตัวเข้มบนพื้นสว่างก่อน (ขั้นตอนลบเงาและ OCR ถนัดแบบนี้)
+        const inverted = opts.inverted ?? (opts.polarity !== false && isLightOnDark(crop.data, crop.w, crop.h));
+        if (inverted) invertRGBA(crop);
         const full = { x0: 0, y0: 0, x1: 1, y1: 1 };
-        const orient = textOrientation(crop.data, crop.w, crop.h, full);
-        const order = orient.vertical ? [270, 90] : [0, 180];
+        // อ่านเฟรมถัดไปของภาพเดิม: ใช้มุมเดิม ไม่ต้องตรวจใหม่ (ประหยัดเวลา)
+        const orient = opts.deg != null ? { vertical: opts.deg % 180 !== 0 } : textOrientation(crop.data, crop.w, crop.h, full);
+        const order = opts.deg != null ? [opts.deg] : orient.vertical ? [270, 90, 0] : [0, 180];
         let best = null;
         for (const deg of order) {
             const r = rotateRGBA(crop, deg);
             const p = prepare(r.data, r.w, r.h, full, targetH);
             const data = await recognize(p);
-            const text = cleanForSpeech(filterLines(data, lineMin));
+            const core = coreIn(opts.core, roi, deg, p);
+            const text = cleanForSpeech(filterLines(data, lineMin, 3, core));
             const qa = quality(text, data.confidence);
             const cur = { text, deg, prep: p, confidence: data.confidence, ...qa };
             if (!best || cur.q > best.q) best = cur;
             if (qa.good) break; // มุมแรกดีพอแล้ว ไม่ต้องลองมุมอื่น (ประหยัดเวลา)
         }
         best.vertical = orient.vertical;
+        best.inverted = inverted;
         return best;
     }
 
+    // ---------- อ่านหลายเฟรมแล้วพูดเฉพาะส่วนที่ตรงกัน ----------
+
+    /** ความคล้ายของข้อความ (Dice จากคู่ตัวอักษร) 0..1 */
+    function similarity(a, b) {
+        const norm = (x) => x.replace(/\s+/g, "").toLowerCase();
+        a = norm(a); b = norm(b);
+        if (a === b) return a ? 1 : 0;
+        if (a.length < 2 || b.length < 2) return 0;
+        const pairs = new Map();
+        for (let i = 0; i < a.length - 1; i++) { const k = a.slice(i, i + 2); pairs.set(k, (pairs.get(k) || 0) + 1); }
+        let hit = 0;
+        for (let i = 0; i < b.length - 1; i++) { const k = b.slice(i, i + 2), n = pairs.get(k); if (n) { hit++; pairs.set(k, n - 1); } }
+        return (2 * hit) / (a.length + b.length - 2);
+    }
+
+    function lineScore(line) {
+        const lm = thaiLM();
+        const s = lm ? lm.score(line) : { n: 0 };
+        return s.n >= 4 ? s.perChar : -5 + Math.min(line.length, 40) / 400; // อังกฤษ: ไม่มีโมเดล ใช้ความยาวตัดสินเล็กน้อย
+    }
+
+    /**
+     * รวมผลอ่านจากหลายเฟรมของภาพเดียวกัน: เก็บเฉพาะบรรทัดที่เจอในอย่างน้อย need เฟรม
+     * แต่ละบรรทัดเลือกฉบับที่ "เหมือนภาษาไทยจริง" ที่สุด เรียงตามเฟรมที่อ่านได้ครบที่สุด
+     */
+    function consensus(texts, need = 2, minSim = 0.6) {
+        const sets = texts.map((t) => t.split("\n").map((l) => l.trim()).filter(Boolean));
+        const base = sets.reduce((a, b) => (b.length > a.length ? b : a), []);
+        const out = [];
+        for (const line of base) {
+            const versions = [line];
+            for (const other of sets) {
+                if (other === base) continue;
+                let best = null, bs = 0;
+                for (const o of other) { const v = similarity(line, o); if (v > bs) { bs = v; best = o; } }
+                if (bs >= minSim) versions.push(best);
+            }
+            if (versions.length >= need) out.push(versions.reduce((a, b) => (lineScore(b) > lineScore(a) ? b : a)));
+        }
+        return { text: out.join("\n"), agreed: out.length, total: base.length };
+    }
+
     return {
-        ROI, prepare, sharpness, filterLines, textOrientation, readBest, cleanForSpeech, quality,
+        consensus, similarity,
+        ROI, READ_ROI, prepare, sharpness, filterLines, textOrientation, isLightOnDark, readBest, cleanForSpeech, quality,
         rotateRGBA, cropRGBA, grayROI, noiseSigma, charHeight,
     };
 });

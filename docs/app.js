@@ -32,6 +32,7 @@ const WAIT_STEADY_MS = 3000;      // กด "อ่านเลย" แล้ว
 const HINT_AFTER_MS = 6000;       // อ่านอัตโนมัติ: ไม่เจอภาพนิ่งนานเท่านี้ -> พูดแนะนำ
 const HINT_COOLDOWN_MS = 12000;
 const SAME_TEXT_THRESHOLD = 0.8;  // ข้อความคล้ายเดิมเกินนี้ไม่ต้องอ่านซ้ำ
+const CONFIRM_GAP_MS = 250;       // เว้นระยะก่อนถ่ายเฟรมยืนยัน (ให้ได้ภาพที่ต่างกันจริง)
 
 let worker = null;
 let workerLang = null;
@@ -195,14 +196,44 @@ async function readNow(auto = false) {
             return;
         }
 
-        if (auto && similarity(text, lastSpoken) >= SAME_TEXT_THRESHOLD) return;
+        // กล้องสด: อย่ารีบพูด อ่านเฟรมถัดไปอีก 1-2 เฟรม แล้วพูดเฉพาะบรรทัดที่อ่านตรงกัน
+        // (ทดลองกับกระดานจำลอง: คำที่พูดผิดลดครึ่งหนึ่ง กระดานที่ไม่มีคำผิดเลย 75% -> 90%)
+        let finalText = text, frames = 1;
+        if (stream) {
+            const texts = [text];
+            const again = async () => {
+                setStatus(`กำลังอ่านซ้ำเพื่อยืนยัน (${texts.length + 1}/3)…`);
+                await sleep(CONFIRM_GAP_MS);
+                await waitForSteady(WAIT_STEADY_MS / 2);
+                const f = grabFrame();
+                if (!f) return;
+                const r = await NEPrep.readBest(f.data, f.W, f.H, f.roi, (p) => recognizePrepared(w, p), LINE_MIN_CONF, undefined, { deg: best.deg, inverted: best.inverted });
+                texts.push(r.text);
+            };
+            await again();
+            let c = NEPrep.consensus(texts, 2);
+            if (c.agreed === 0 || c.agreed < c.total) { // ยังมีบรรทัดที่ไม่ได้รับการยืนยัน -> เฟรมที่ 3
+                await again();
+                c = NEPrep.consensus(texts, 2);
+            }
+            finalText = c.text;
+            frames = texts.length;
+            if (!finalText) {
+                const hint = "แต่ละครั้งอ่านได้ไม่ตรงกัน ลองถือกล้องให้นิ่งกว่านี้ หรือถอยออกให้เห็นทั้งแผ่น";
+                if (!auto) { setStatus(hint); speak(hint); } else speakHint(hint);
+                return;
+            }
+        }
 
-        resultEl.textContent = text;
+        if (auto && similarity(finalText, lastSpoken) >= SAME_TEXT_THRESHOLD) return;
+
+        resultEl.textContent = finalText;
         const turned = best.deg ? ` · หมุนภาพให้ ${best.deg === 180 ? "กลับหัว" : "90°"} อัตโนมัติ` : "";
-        setStatus(`อ่านได้แล้ว (ความมั่นใจ ${Math.round(best.confidence)}%)${turned}`);
-        lastSpoken = text;
+        const confirmed = frames > 1 ? ` · ยืนยันจาก ${frames} ภาพ` : "";
+        setStatus(`อ่านได้แล้ว (ความมั่นใจ ${Math.round(best.confidence)}%)${turned}${confirmed}`);
+        lastSpoken = finalText;
         btnRepeat.disabled = false;
-        speak(text);
+        speak(finalText);
     } catch (err) {
         console.error(err);
         setStatus("อ่านข้อความไม่สำเร็จ ลองใหม่อีกครั้ง");
