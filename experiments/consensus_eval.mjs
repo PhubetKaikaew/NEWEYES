@@ -11,8 +11,11 @@ const NE = require("../docs/preprocess.js");
 const items = JSON.parse(fs.readFileSync("data/board_seq/manifest.json", "utf8"));
 const scheduler = Tesseract.createScheduler();
 for (let i = 0; i < 10; i++) {
-    const w = await Tesseract.createWorker(["tha", "eng"], 1, { cachePath: path.resolve("data/cache/best_int") });
-    await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
+    const model = process.env.MODEL || "best_int";
+    const wopts = { cachePath: path.resolve("data/cache", model) };
+    if (model !== "best_int") Object.assign(wopts, { langPath: path.resolve("data/models", model), gzip: false });
+    const w = await Tesseract.createWorker(["tha", "eng"], 1, wopts);
+    await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1", tessedit_do_invert: process.env.INVERT || "1" });
     scheduler.addWorker(w);
 }
 const recognize = async (p) => {
@@ -32,7 +35,8 @@ const out = [];
 await Promise.all(items.map(async (it) => {
     const r0 = await read(it.frames[0], {});
     const more = { deg: r0.deg, inverted: r0.inverted };
-    const [r1, r2] = await Promise.all([read(it.frames[1], more), read(it.frames[2], more)]);
+    // PARALLEL=1: ภาพที่ 2 ตรวจมุม/สีเอง (แบบที่แอปใช้เมื่ออ่าน 2 ภาพพร้อมกัน)
+    const [r1, r2] = await Promise.all([read(it.frames[1], process.env.PARALLEL === "1" ? {} : more), read(it.frames[2], more)]);
     const c2 = NE.consensus([r0.text, r1.text], 2);
     // แบบปรับตัว: ถ้า 2 เฟรมเห็นตรงกันน้อย ค่อยอ่านเฟรมที่ 3 แล้วเอาที่ตรงกัน 2 ใน 3
     const adaptive = c2.agreed >= Math.max(1, Math.ceil(c2.total * 0.6)) ? c2 : NE.consensus([r0.text, r1.text, r2.text], 2);

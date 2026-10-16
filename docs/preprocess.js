@@ -55,18 +55,30 @@
         for (let i = -r; i <= r; i++) sum += (k[i + r] = Math.exp(-(i * i) / (2 * sigma * sigma)));
         for (let i = 0; i < k.length; i++) k[i] /= sum;
         const t = new Float32Array(w * h), o = new Float32Array(w * h);
+        // แนวนอน: ช่วงกลางไม่ต้องเช็กขอบ (เร็วขึ้นหลายเท่า ผลเหมือนเดิม)
         for (let y = 0; y < h; y++) {
             const row = y * w;
             for (let x = 0; x < w; x++) {
                 let v = 0;
-                for (let i = -r; i <= r; i++) v += g[row + clamp(x + i, 0, w - 1)] * k[i + r];
+                if (x >= r && x < w - r) {
+                    const base = row + x - r;
+                    for (let i = 0; i <= 2 * r; i++) v += g[base + i] * k[i];
+                } else {
+                    for (let i = -r; i <= r; i++) v += g[row + clamp(x + i, 0, w - 1)] * k[i + r];
+                }
                 t[row + x] = v;
             }
         }
         for (let y = 0; y < h; y++) {
+            const inner = y >= r && y < h - r;
             for (let x = 0; x < w; x++) {
                 let v = 0;
-                for (let i = -r; i <= r; i++) v += t[clamp(y + i, 0, h - 1) * w + x] * k[i + r];
+                if (inner) {
+                    let idx = (y - r) * w + x;
+                    for (let i = 0; i <= 2 * r; i++, idx += w) v += t[idx] * k[i];
+                } else {
+                    for (let i = -r; i <= r; i++) v += t[clamp(y + i, 0, h - 1) * w + x] * k[i + r];
+                }
                 o[y * w + x] = v;
             }
         }
@@ -81,20 +93,31 @@
     // ---------- วัดสภาพภาพ ----------
 
     /** noise ของภาพ (MAD ของส่วนต่างกับ median 3x3) */
+    // มัธยฐานของ 9 ค่า (sorting network ของ Paeth) — ไม่ต้องจัดสรรหน่วยความจำ/เรียกฟังก์ชันเรียง
+    function med9(p) {
+        let t;
+        const S = (a, b) => { if (p[a] > p[b]) { t = p[a]; p[a] = p[b]; p[b] = t; } };
+        S(1, 2); S(4, 5); S(7, 8); S(0, 1); S(3, 4); S(6, 7); S(1, 2); S(4, 5); S(7, 8);
+        S(0, 3); S(5, 8); S(4, 7); S(3, 6); S(1, 4); S(2, 5); S(4, 7); S(4, 2); S(6, 4); S(4, 2);
+        return p[4];
+    }
+
     function noiseSigma(g, w, h) {
-        const step = Math.max(1, Math.round(Math.sqrt((w * h) / 250000)));
-        const d = [];
+        const step = Math.max(1, Math.round(Math.sqrt((w * h) / 60000)));
+        const d = new Float32Array(Math.ceil((h - 2) / step) * Math.ceil((w - 2) / step));
         const n9 = new Float32Array(9);
+        let n = 0;
         for (let y = 1; y < h - 1; y += step) {
             for (let x = 1; x < w - 1; x += step) {
                 let c = 0;
                 for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) n9[c++] = g[(y + j) * w + x + i];
-                n9.sort();
-                d.push(g[y * w + x] - n9[4]);
+                d[n++] = g[y * w + x] - med9(n9);
             }
         }
-        const md = median(d);
-        return 1.4826 * median(d.map((v) => Math.abs(v - md)));
+        const dv = d.subarray(0, n);
+        const md = median(dv);
+        for (let i = 0; i < n; i++) dv[i] = Math.abs(dv[i] - md);
+        return 1.4826 * median(dv);
     }
 
     /** ความคม = variance ของ Laplacian (ใช้ตัดสินว่ากล้องนิ่ง/โฟกัสแล้วหรือยัง) */
@@ -250,9 +273,7 @@
 
     /** ตัวหนังสือในกรอบเรียงแนวนอนหรือแนวตั้ง (มือถือถือแนวตั้งถ่ายการ์ดแนวนอน -> ตัวหนังสือหมุน 90°) */
     function textOrientation(rgba, W, H, roi = ROI) {
-        let { g, w, h } = grayROI(rgba, W, H, roi);
-        const s = 400 / Math.max(w, h);
-        if (s < 1) ({ g, w, h } = resize(g, w, h, s));
+        let { g, w, h } = smallGray(rgba, W, H, roi, 400);
         // ใช้เฉพาะ "เส้นบางที่มืดกว่ารอบ ๆ" (black-hat) เป็นหมึก: ผนัง/ขอบกระดาน/รูปภาพก้อนใหญ่จะไม่ถูกนับ
         g = gaussian(g, w, h, 0.8);
         const close = minMax(minMax(g, w, h, 3, true), w, h, 3, false);
@@ -262,19 +283,33 @@
         return { vertical: cols > rows * 1.15, rows, cols };
     }
 
+    // min/max ในหน้าต่างกว้าง 2r+1 ตามแนวเดียว (van Herk / Gil-Werman) — ขอบภาพใช้หน้าต่างที่ถูกตัด เหมือนแบบตรง ๆ
+    function runMinMax(src, dst, n, off, stride, r, useMax, gbuf, hbuf) {
+        const k = 2 * r + 1, sg = useMax ? 1 : -1; // ใช้ sg*x เพื่อให้ min กลายเป็น max ได้ในโค้ดเดียว
+        for (let i = 0; i < n; i++) {
+            const v = sg * src[off + i * stride];
+            gbuf[i] = i % k === 0 || v > gbuf[i - 1] ? v : gbuf[i - 1];
+        }
+        for (let i = n - 1; i >= 0; i--) {
+            const v = sg * src[off + i * stride];
+            hbuf[i] = i % k === k - 1 || i === n - 1 || v > hbuf[i + 1] ? v : hbuf[i + 1];
+        }
+        for (let i = 0; i < n; i++) {
+            const a = i - r < 0 ? 0 : i - r, b = i + r > n - 1 ? n - 1 : i + r;
+            let v;
+            if (((a / k) | 0) === ((b / k) | 0)) { // หน้าต่างอยู่ในบล็อกเดียว (เกิดแค่ช่วงขอบ)
+                v = sg * src[off + a * stride];
+                for (let j = a + 1; j <= b; j++) { const u = sg * src[off + j * stride]; if (u > v) v = u; }
+            } else v = hbuf[a] > gbuf[b] ? hbuf[a] : gbuf[b];
+            dst[off + i * stride] = sg * v;
+        }
+    }
+
     function minMax(g, w, h, r, useMax) {
         const t = new Float32Array(w * h), o = new Float32Array(w * h);
-        const pick = useMax ? Math.max : Math.min;
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-            let v = g[y * w + x];
-            for (let k = Math.max(0, x - r); k <= Math.min(w - 1, x + r); k++) v = pick(v, g[y * w + k]);
-            t[y * w + x] = v;
-        }
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-            let v = t[y * w + x];
-            for (let k = Math.max(0, y - r); k <= Math.min(h - 1, y + r); k++) v = pick(v, t[k * w + x]);
-            o[y * w + x] = v;
-        }
+        const gb = new Float32Array(Math.max(w, h)), hb = new Float32Array(Math.max(w, h));
+        for (let y = 0; y < h; y++) runMinMax(g, t, w, y * w, 1, r, useMax, gb, hb);
+        for (let x = 0; x < w; x++) runMinMax(t, o, h, x, w, r, useMax, gb, hb);
         return o;
     }
 
@@ -284,9 +319,7 @@
      * พื้นที่ใหญ่ ๆ อย่างผนังหรือขอบกระดานไม่มีผล เพราะไม่ใช่เส้นบาง
      */
     function isLightOnDark(rgba, W, H, o = {}) {
-        let { g, w, h } = grayROI(rgba, W, H, { x0: 0, y0: 0, x1: 1, y1: 1 });
-        const s = (o.size || 600) / Math.max(w, h);
-        if (s < 1) ({ g, w, h } = resize(g, w, h, s));
+        let { g, w, h } = smallGray(rgba, W, H, { x0: 0, y0: 0, x1: 1, y1: 1 }, o.size || 600);
         g = gaussian(g, w, h, o.blur || 1); // ลบเนื้อผงชอล์ก/จุดเล็ก ๆ ก่อน (ไม่เบลอ = ตรวจผิด 9/48 กระดาน)
         const r = o.r || 3;
         const open = minMax(minMax(g, w, h, r, false), w, h, r, true);
@@ -300,6 +333,27 @@
         return o.raw ? { light, dark } : light > dark * 1.3;
     }
 
+    function smallGray(rgba, W, H, roi, size) {
+        const x0 = Math.round(W * roi.x0), y0 = Math.round(H * roi.y0);
+        const w0 = Math.round(W * roi.x1) - x0, h0 = Math.round(H * roi.y1) - y0;
+        const f = Math.max(1, Math.floor(Math.max(w0, h0) / size));
+        const w = Math.floor(w0 / f), h = Math.floor(h0 / f);
+        let g = new Float32Array(w * h);
+        const inv = 1 / (f * f);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            let acc = 0;
+            for (let j = 0; j < f; j++) {
+                let i = ((y0 + y * f + j) * W + x0 + x * f) * 4;
+                for (let q = 0; q < f; q++, i += 4) acc += 0.299 * rgba[i] + 0.587 * rgba[i + 1] + 0.114 * rgba[i + 2];
+            }
+            g[y * w + x] = Math.round(acc * inv);
+        }
+        let out = { g, w, h };
+        const s = size / Math.max(w, h);
+        if (s < 1) out = resize(g, w, h, s);
+        return out;
+    }
+
     function invertRGBA(img) {
         const d = img.data;
         for (let i = 0; i < d.length; i += 4) { d[i] = 255 - d[i]; d[i + 1] = 255 - d[i + 1]; d[i + 2] = 255 - d[i + 2]; }
@@ -309,23 +363,35 @@
     // ---------- รวมทุกขั้นตอน ----------
 
     /** rgba ทั้งเฟรม -> ภาพขาวดำพร้อมส่ง OCR (เฉพาะในกรอบ) */
-    function prepare(rgba, W, H, roi = ROI, targetH = TARGET_CHAR_H) {
+    const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+    /** T (ไม่บังคับ) = ออบเจกต์เก็บเวลาแต่ละขั้น (ms) ไว้วัดความเร็ว */
+    function prepare(rgba, W, H, roi = ROI, targetH = TARGET_CHAR_H, T = null) {
+        let t = now();
+        const lap = (k) => { if (T) { const n = now(); T[k] = (T[k] || 0) + n - t; t = n; } };
         let { g, w, h } = grayROI(rgba, W, H, roi);
         if (w > MAX_ROI_W) ({ g, w, h } = resize(g, w, h, MAX_ROI_W / w));
+        lap("gray");
         const noise = noiseSigma(g, w, h);
         const noisy = noise > NOISE_THR;
         if (noisy) g = gaussian(g, w, h, 0.8);
+        lap("noise");
         const charH = charHeight(g, w, h);
+        lap("charH");
         let s = charH ? clamp(targetH / charH, 0.5, 4) : 1;
         if (w * h * s * s > MAX_PIXELS) s = Math.sqrt(MAX_PIXELS / (w * h));
         if (Math.abs(s - 1) > 0.05) ({ g, w, h } = resize(g, w, h, s));
+        lap("resize");
         if (!noisy) g = unsharp(g, w, h);
+        lap("unsharp");
         g = flat(g, w, h);
+        lap("flat");
         const out = new Uint8ClampedArray(w * h * 4);
         for (let i = 0, j = 0; i < g.length; i++, j += 4) {
             out[j] = out[j + 1] = out[j + 2] = g[i];
             out[j + 3] = 255;
         }
+        lap("rgba");
         return { rgba: out, width: w, height: h, info: { noise, charH, scale: s } };
     }
 
@@ -517,22 +583,32 @@
      * recognize(prepared) -> Promise<tesseract data>
      */
     async function readBest(rgba, W, H, roi, recognize, lineMin = 60, targetH = TARGET_CHAR_H, opts = {}) {
+        const T = opts.timing || null;
+        let t0 = now();
+        const lap = (k) => { if (T) { const n = now(); T[k] = (T[k] || 0) + n - t0; t0 = n; } };
         const crop = cropRGBA(rgba, W, H, roi);
         // กระดานดำ/เขียว: กลับสีให้เป็นตัวเข้มบนพื้นสว่างก่อน (ขั้นตอนลบเงาและ OCR ถนัดแบบนี้)
         const inverted = opts.inverted ?? (opts.polarity !== false && isLightOnDark(crop.data, crop.w, crop.h));
         if (inverted) invertRGBA(crop);
+        lap("polarity");
         const full = { x0: 0, y0: 0, x1: 1, y1: 1 };
         // อ่านเฟรมถัดไปของภาพเดิม: ใช้มุมเดิม ไม่ต้องตรวจใหม่ (ประหยัดเวลา)
         const orient = opts.deg != null ? { vertical: opts.deg % 180 !== 0 } : textOrientation(crop.data, crop.w, crop.h, full);
         const order = opts.deg != null ? [opts.deg] : orient.vertical ? [270, 90, 0] : [0, 180];
+        lap("orient");
         let best = null;
         for (const deg of order) {
             const r = rotateRGBA(crop, deg);
-            const p = prepare(r.data, r.w, r.h, full, targetH);
+            lap("rotate");
+            const p = prepare(r.data, r.w, r.h, full, targetH, T);
+            t0 = now();
             const data = await recognize(p);
+            lap("ocr");
+            if (T) T.ocrCalls = (T.ocrCalls || 0) + 1, T.ocrPixels = (T.ocrPixels || 0) + p.width * p.height;
             const core = coreIn(opts.core, roi, deg, p);
             const text = cleanForSpeech(filterLines(data, lineMin, 3, core));
             const qa = quality(text, data.confidence);
+            lap("post");
             const cur = { text, deg, prep: p, confidence: data.confidence, ...qa };
             if (!best || cur.q > best.q) best = cur;
             if (qa.good) break; // มุมแรกดีพอแล้ว ไม่ต้องลองมุมอื่น (ประหยัดเวลา)

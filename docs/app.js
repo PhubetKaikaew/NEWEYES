@@ -61,26 +61,45 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- OCR ----------
 
+// โมเดล "fast" ที่โฮสต์บนเว็บนี้เอง (แม่นกว่าและเล็กกว่ารุ่นจาก CDN — ดู experiments/REPORT.md)
+const MODEL_PATH = new URL("tessdata", location.href).href;
+const MODEL_CACHE = "neweyes-fast-v1"; // แยกแคชจากโมเดลรุ่นเก่า
+const OCR_OUTPUT = { text: true, blocks: true, hocr: false, tsv: false }; // ไม่สร้างผลลัพธ์ที่ไม่ได้ใช้
+
+async function makeWorker(lang, logger) {
+    // ส่ง logger เฉพาะเมื่อมี: ส่ง undefined ตรง ๆ จะทับค่าเริ่มต้นของ Tesseract แล้ว error ทุกครั้งที่รายงานความคืบหน้า
+    const opts = { langPath: MODEL_PATH, cachePath: MODEL_CACHE };
+    if (logger) opts.logger = logger;
+    const w = await Tesseract.createWorker(lang.split("+"), 1, opts);
+    // PSM 6 = ข้อความเป็นก้อนเดียว; ไม่ให้ Tesseract ลองกลับสีเอง เพราะเรากลับสีกระดานดำให้แล้ว (เร็วขึ้น ผลเท่าเดิม)
+    await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1", tessedit_do_invert: "0" });
+    return w;
+}
+
+// worker ตัวที่ 2 ไว้อ่านภาพยืนยันพร้อมกัน (โหลดเบื้องหลังหลังตัวแรกพร้อม ถ้าเครื่องไม่ไหวก็ใช้ตัวเดียว)
+let worker2 = null;
+
 function getWorker() {
     const lang = langSelect.value;
     if (worker && workerLang === lang) return workerReady;
 
-    const old = worker;
+    const old = worker, old2 = worker2;
+    worker2 = null;
     workerLang = lang;
     workerReady = (async () => {
         if (old) await old.terminate();
+        if (old2) await old2.terminate();
         setStatus("กำลังโหลดตัวอ่านภาษา…");
-        const w = await Tesseract.createWorker(lang.split("+"), 1, {
-            logger: (m) => {
-                if (m.status === "loading language traineddata" && m.progress < 1) {
-                    setStatus(`กำลังโหลดตัวอ่านภาษา… ${Math.round(m.progress * 100)}%`);
-                }
-            },
+        const w = await makeWorker(lang, (m) => {
+            if (m.status === "loading language traineddata" && m.progress < 1) {
+                setStatus(`กำลังโหลดตัวอ่านภาษา… ${Math.round(m.progress * 100)}%`);
+            }
         });
-        // PSM 6 = ข้อความเป็นก้อนเดียว (โหมดอัตโนมัติเดิมทิ้งข้อความไป 27% ของภาพ)
-        await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
         worker = w;
         setStatus("พร้อมใช้งาน");
+        makeWorker(lang)
+            .then((w2) => { if (workerLang === lang) worker2 = w2; else w2.terminate(); })
+            .catch(() => {}); // หน่วยความจำไม่พอ: ใช้ worker เดียวต่อไป
         return w;
     })();
     workerReady.catch(() => {
@@ -139,13 +158,14 @@ function grabFrame() {
 
 // ส่งภาพที่เตรียมแล้วให้ Tesseract
 async function recognizePrepared(w, p) {
-    canvas.width = p.width;
-    canvas.height = p.height;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const cv = document.createElement("canvas"); // canvas แยกต่อครั้ง: อ่าน 2 ภาพพร้อมกันได้โดยไม่ทับกัน
+    cv.width = p.width;
+    cv.height = p.height;
+    const ctx = cv.getContext("2d");
     const img = ctx.createImageData(p.width, p.height);
     img.data.set(p.rgba);
     ctx.putImageData(img, 0, 0);
-    return (await w.recognize(canvas)).data;
+    return (await w.recognize(cv, {}, OCR_OUTPUT)).data;
 }
 
 async function waitForSteady(maxMs) {
@@ -174,10 +194,24 @@ async function readNow(auto = false) {
         await sleep(0); // ให้หน้าจออัปเดตก่อนประมวลผลภาพ
         const frame = grabFrame();
         if (!frame) return;
-        // ตรวจทิศทางตัวหนังสือ (เช่นถือมือถือแนวตั้งถ่ายการ์ดแนวนอน) แล้วเลือกมุมที่อ่านได้ดีที่สุด
-        const best = await NEPrep.readBest(frame.data, frame.W, frame.H, frame.roi, (p) => recognizePrepared(w, p), LINE_MIN_CONF);
-        const text = best.text;
-        const readable = text.replace(/\s/g, "").length >= 3 && (best.good || best.q >= 10);
+        const read = (f, wk, opts) => NEPrep.readBest(f.data, f.W, f.H, f.roi, (p) => recognizePrepared(wk, p), LINE_MIN_CONF, undefined, opts);
+
+        // กล้องสด + มี worker ที่ 2: ถ่ายภาพที่ 2 ห่างกัน 250 ms แล้วอ่านทั้งสองภาพ "พร้อมกัน" (เร็วกว่าอ่านทีละภาพเกือบเท่าตัว)
+        // ทุกภาพตรวจมุม/สีเอง ตัวตรวจเหล่านี้ถูก 100% ในชุดทดสอบ จึงไม่ต้องรอผลจากภาพแรก
+        let best, texts;
+        const w2 = worker2;
+        if (stream && w2) {
+            const p0 = read(frame, w);
+            await sleep(CONFIRM_GAP_MS);
+            const frame2 = grabFrame();
+            const [r0, r1] = await Promise.all([p0, frame2 ? read(frame2, w2) : Promise.resolve(null)]);
+            best = r1 && r1.q > r0.q ? r1 : r0;
+            texts = r1 ? [r0.text, r1.text] : [r0.text];
+        } else {
+            best = await read(frame, w);
+            texts = [best.text];
+        }
+        const readable = best.text.replace(/\s/g, "").length >= 3 && (best.good || best.q >= 10);
 
         if (!readable) {
             const charH = best.prep.info.charH;
@@ -196,23 +230,22 @@ async function readNow(auto = false) {
             return;
         }
 
-        // กล้องสด: อย่ารีบพูด อ่านเฟรมถัดไปอีก 1-2 เฟรม แล้วพูดเฉพาะบรรทัดที่อ่านตรงกัน
+        // กล้องสด: อย่ารีบพูด พูดเฉพาะบรรทัดที่อ่านตรงกันอย่างน้อย 2 ภาพ (ภาพที่ 3 อ่านเมื่อยังมีบรรทัดไม่ได้รับการยืนยัน)
         // (ทดลองกับกระดานจำลอง: คำที่พูดผิดลดครึ่งหนึ่ง กระดานที่ไม่มีคำผิดเลย 75% -> 90%)
-        let finalText = text, frames = 1;
+        let finalText = best.text, frames = 1;
         if (stream) {
-            const texts = [text];
             const again = async () => {
                 setStatus(`กำลังอ่านซ้ำเพื่อยืนยัน (${texts.length + 1}/3)…`);
                 await sleep(CONFIRM_GAP_MS);
                 await waitForSteady(WAIT_STEADY_MS / 2);
                 const f = grabFrame();
                 if (!f) return;
-                const r = await NEPrep.readBest(f.data, f.W, f.H, f.roi, (p) => recognizePrepared(w, p), LINE_MIN_CONF, undefined, { deg: best.deg, inverted: best.inverted });
+                const r = await read(f, w, { deg: best.deg, inverted: best.inverted });
                 texts.push(r.text);
             };
-            await again();
+            if (texts.length < 2) await again(); // มี worker เดียว: อ่านภาพที่ 2 ต่อจากภาพแรก
             let c = NEPrep.consensus(texts, 2);
-            if (c.agreed === 0 || c.agreed < c.total) { // ยังมีบรรทัดที่ไม่ได้รับการยืนยัน -> เฟรมที่ 3
+            if (c.agreed === 0 || c.agreed < c.total) { // ยังมีบรรทัดที่ไม่ได้รับการยืนยัน -> ภาพที่ 3
                 await again();
                 c = NEPrep.consensus(texts, 2);
             }

@@ -5,8 +5,11 @@ import { createRequire } from "node:module";
 import path from "node:path";
 const require = createRequire(import.meta.url);
 const NE = require("../docs/preprocess.js");
-const w = await Tesseract.createWorker(["tha", "eng"], 1, { cachePath: path.resolve("data/cache/best_int") });
-await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
+const model = process.env.MODEL || "best_int";
+const wopts = { cachePath: path.resolve("data/cache", model) };
+if (model !== "best_int") Object.assign(wopts, { langPath: path.resolve("data/models", model), gzip: false });
+const w = await Tesseract.createWorker(["tha", "eng"], 1, wopts);
+await w.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1", tessedit_do_invert: "0" });
 const recognize = async (p) => {
     const o = createCanvas(p.width, p.height); const d = o.getContext("2d").createImageData(p.width, p.height);
     d.data.set(p.rgba); o.getContext("2d").putImageData(d, 0, 0);
